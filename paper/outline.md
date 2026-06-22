@@ -117,7 +117,7 @@ Multi-center brain tumor diagnosis requires models that can learn from distribut
 | BraTS | pending | 3D | T1/T1c/T2/FLAIR | pending | pending | pending |
 | Shanghai | pending | 3D | T1c/FLAIR | pending | pending | pending |
 | Figshare | Hugging Face mirror of Cheng et al. | 2D | T1c | 2522 | 542 | 3 |
-| Brisc2025 | pending | 2D | T1 | pending | pending | pending |
+| Brisc2025 | Zenodo DOI 10.5281/zenodo.17524350 | 2D | T1 | 5000 | 1000 | 4 |
 
 ### 4.2 Baselines
 
@@ -158,6 +158,20 @@ Multi-center brain tumor diagnosis requires models that can learn from distribut
 | Local | 84.25 | 84.05 |
 | FedAMM | pending test rerun | pending test rerun |
 | FedMFG | pending test rerun | pending test rerun |
+
+公开双客户端链路检查：
+
+| Algorithm | Accuracy (%) | Macro F1 (%) | Setting |
+| --- | ---: | ---: | --- |
+| Local | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+| FedGH | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+| FedProto | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+| FedTGP | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+| FedMM | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+| FedAMM | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+| FedMFG | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+
+该表只证明所有方法可以在正式 BRISC2025 数据上完整训练和测试。由于样本量和轮数过小，且任务难度不足，不能作为论文正式主表。
 
 ### 4.5 Ablation study
 

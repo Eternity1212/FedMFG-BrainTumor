@@ -163,16 +163,18 @@ bash scripts/test/test_mfg.sh --checkpoint checkpoints/fedmfg/best_checkpoint.pt
 - 建立 `data/` 数据目录规范。
 - 完成 `Figshare` Hugging Face 镜像预处理，得到 `data/processed/Figshare`。
 - 新增 `Simezu/brain-tumour-MRI-scan` 预处理脚本，可作为 `Brisc2025` 的公开替代路线。
+- 完成正式 `BRISC2025` Zenodo 数据下载与预处理，得到 `data/processed/Brisc2025`，共 train=5000、test=1000。
 - 跑通 `Figshare` 单客户端 FedMFG smoke test。
 - 跑通 `Figshare + Brisc2025替代` 双客户端 FedMFG smoke test。
+- 跑通 `Figshare + 正式 BRISC2025` 公开双客户端 baseline 链路检查，输出 `paper_outputs/public_2client/summary.csv`。
 - 新增论文初稿框架：`paper/outline.md`。
 - 新增实验追踪表：`paper/experiment_tracker.md`。
 
 仍然阻塞正式论文实验的关键问题：
 
-- 当前机器没有 `BraTS`、`Shanghai` 和正式 `Brisc2025` 原始/预处理数据。
-- `Simezu` 的 Hugging Face 流式下载较慢，正式实验建议使用 Kaggle、Figshare 或 Zenodo 压缩包离线下载后预处理。
-- 现有 smoke test 只用于验证代码链路，不可作为论文结果。
+- 当前机器仍然没有 `BraTS` 和 `Shanghai` 原始/预处理数据。
+- 当前机器无 CUDA/MPS，只能 CPU 训练；全量正式实验会很慢，建议使用 GPU 或分批长时间运行。
+- 现有 smoke test 和 `MAX_SAMPLES=80` 链路检查只用于验证代码链路，不可作为论文正式结果。
 
 ## 论文潜力判断
 

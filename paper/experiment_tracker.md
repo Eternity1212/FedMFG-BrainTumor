@@ -9,7 +9,7 @@
 | Figshare | 已完成 | `data/processed/Figshare` | Hugging Face 镜像，train=2522, test=542 |
 | BraTS | 未找到 | `data/processed/BraTS` | 当前机器没有原实验数据；需要官方授权或提供已预处理数据 |
 | Shanghai | 未找到 | `data/processed/Shanghai` | 当前机器没有原实验数据；可能是私有数据 |
-| Brisc2025 | 已找到正式公开源；待下载预处理 | `data/processed/Brisc2025` | Zenodo DOI `10.5281/zenodo.17524350`，已新增下载和预处理脚本；当前本地仍是 `Simezu` 部分样本，仅用于链路验证 |
+| Brisc2025 | 已完成正式公开源下载与预处理 | `data/processed/Brisc2025` | Zenodo DOI `10.5281/zenodo.17524350`，train=5000, test=1000，四类完整 |
 | Yale | 未找到 | `data/processed/Yale` | 可作为外部验证客户端，当前无数据 |
 
 ## 已完成工程验证
@@ -23,22 +23,26 @@
 | FedMFG 单客户端 smoke test | 完成 | `paper_outputs/smoke_figshare_mfg/test_predictions.json` |
 | 混淆矩阵生成 | 完成 | `paper_outputs/smoke_figshare_mfg/confusion/` |
 | FedMFG 公开双客户端 smoke train/test | 完成 | `paper_outputs/smoke_public_2client_mfg/history.json` |
+| BRISC2025 Zenodo 下载与预处理 | 完成 | `data/raw/brisc2025/brisc2025.zip`, `data/processed/Brisc2025` |
+| Figshare + BRISC2025 数据统计 | 完成 | `paper_outputs/public_2client_dataset_summary.csv` |
+| 公开双客户端 baseline 链路检查 | 完成 | `paper_outputs/public_2client/summary.csv` |
 
 说明：smoke test 只使用 `Figshare` 的 24 个样本，用于验证代码链路，不作为论文结果。
 公开双客户端 smoke test 使用 `Figshare` 和 `Brisc2025` 替代客户端各 24 个样本，其中 `Brisc2025` 当前只有 `no_tumor` 类，因此也不作为论文结果。
+最新公开双客户端 baseline 链路检查使用 `Figshare + 正式 BRISC2025`，`ROUNDS=2`、`MAX_SAMPLES=80`，用于验证 `local/fedgh/fedproto/fedtgp/fedmm/fedamm/fedmfg` 在正式数据上均可运行。该设置样本量太小，所有算法测试指标接近或达到 100%，不能作为论文主结果。
 
 ## 主实验状态
 
 | 实验 | 状态 | 阻塞原因 |
 | --- | --- | --- |
-| Local 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025 |
-| FD 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025 |
-| FedGH 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025 |
-| FedProto 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025 |
-| FedTGP 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025 |
-| FedMM 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025 |
-| FedAMM 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025，历史 JSON 缺 test 结果 |
-| FedMFG 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai/Brisc2025，历史 JSON 缺 test 结果 |
+| Local 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
+| FD 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
+| FedGH 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
+| FedProto 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
+| FedTGP 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
+| FedMM 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
+| FedAMM 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐，历史 JSON 缺正式 test 结果 |
+| FedMFG 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐，历史 JSON 缺正式 test 结果 |
 
 ## 消融实验状态
 
@@ -83,11 +87,11 @@ Client/
 - 使用 BraTS/FeTS 构造多个 3D 客户端。
 - 使用 Figshare + 其他公开 2D 脑肿瘤分类数据构造多个 2D 客户端。
 - 明确论文中写作“公开数据模拟异构联邦场景”，而不是声称真实多医院私有数据。
-- `Simezu/brain-tumour-MRI-scan` 可作为公开 2D 替代数据，但 Hugging Face 单文件流式下载较慢；正式实验建议改用 Kaggle/Zenodo/Figshare 压缩包离线下载后预处理。
+- `Simezu/brain-tumour-MRI-scan` 可作为公开 2D 替代数据，但目前已有正式 BRISC2025，因此优先使用 Zenodo 版本。
 
 4. 已确认可优先下载的数据：
 
-- `BRISC2025`: Zenodo `https://doi.org/10.5281/zenodo.17524350`，约 260MB，CC BY 4.0。
+- `BRISC2025`: Zenodo `https://doi.org/10.5281/zenodo.17524350`，约 260MB，CC BY 4.0，已下载并预处理。
 - `UPENN-GBM/UCSF-PDGM/UTSW-Glioma`: TCIA 公开 3D 多模态 glioma 数据，可替代 `Shanghai` 或补充 3D 客户端。
 - `Pretreat-MetsToBrain-Masks/Yale-Brain-Mets-Longitudinal`: TCIA 公开脑转移瘤数据，可用于外部验证或 `brain_metastases` 类。
 
@@ -96,3 +100,4 @@ Client/
 - 没有完整 4 客户端数据时，无法复现毕业论文中的 `FedMFG=90.25%`。
 - `FedMFG` 和 `FedAMM` 历史 JSON 缺少正式 test 指标，需要重新跑。
 - 正式投稿需要多随机种子，否则结果说服力不足。
+- 当前机器无 CUDA/MPS，只能 CPU 训练；全量正式实验会非常慢，建议使用 GPU 或分批长时间运行。
