@@ -129,7 +129,7 @@ def _normalize_key(key):
 
 
 def _combo_size(combo_id):
-    return int(combo_id).bit_count()
+    return bin(int(combo_id)).count("1")
 
 
 def _is_subset_combo(base_combo_id, candidate_combo_id):

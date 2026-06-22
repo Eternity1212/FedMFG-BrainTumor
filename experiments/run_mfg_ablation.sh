@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CODE_DIR="${ROOT_DIR}/Graduation-Design-main"
 DATA_DIR="${1:-${ROOT_DIR}/data/processed}"
+PYTHON_BIN="${PYTHON:-python3}"
+export MPLCONFIGDIR="${ROOT_DIR}/.matplotlib"
+mkdir -p "${MPLCONFIGDIR}"
 
 cd "${CODE_DIR}"
 
@@ -40,7 +43,7 @@ COMMON_ARGS=(
 run_variant() {
   local name="$1"
   shift
-  python train.py \
+  "${PYTHON_BIN}" train.py \
     "${COMMON_ARGS[@]}" \
     --save_dir "checkpoints/ablation_${name}" \
     --history_path "paper_outputs/ablation/${name}_history.json" \

@@ -6,7 +6,7 @@ cd "$(dirname "$0")/../.."
 export PYTHONWARNINGS='ignore:The cuda.cudart module is deprecated and will be removed in a future release:FutureWarning'
 
 python test.py \
-    --root_dir      /data/zikun_workspace/preprocessed \
+    --root_dir      ../data/processed \
     --seed          42 \
     --client_names  BraTS Shanghai Figshare Brisc2025 \
     --local_epochs  1 \

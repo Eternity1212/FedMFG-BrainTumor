@@ -6,10 +6,13 @@ CODE_DIR="${ROOT_DIR}/Graduation-Design-main"
 DATA_DIR="${1:-${ROOT_DIR}/data/processed}"
 CHECKPOINT="${2:-${CODE_DIR}/checkpoints/fedmfg/best_checkpoint.pth}"
 OUTPUT_JSON="${3:-${ROOT_DIR}/paper_outputs/test/fedmfg_test_predictions.json}"
+PYTHON_BIN="${PYTHON:-python3}"
+export MPLCONFIGDIR="${ROOT_DIR}/.matplotlib"
+mkdir -p "${MPLCONFIGDIR}"
 
 cd "${CODE_DIR}"
 
-python test.py \
+"${PYTHON_BIN}" test.py \
   --root_dir "${DATA_DIR}" \
   --checkpoint "${CHECKPOINT}" \
   --output_json "${OUTPUT_JSON}" \
@@ -40,6 +43,6 @@ python test.py \
   --mfg_head_weight_mode rho \
   --num_workers 8
 
-python "${ROOT_DIR}/paper_tools/plot_confusion_from_predictions.py" \
+"${PYTHON_BIN}" "${ROOT_DIR}/paper_tools/plot_confusion_from_predictions.py" \
   --summary_json "${OUTPUT_JSON}" \
   --output_dir "${ROOT_DIR}/paper_outputs/confusion/fedmfg"

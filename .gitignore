@@ -18,6 +18,7 @@ env/
 .vscode/
 *.zip
 *.docx
+.matplotlib/
 
 # Large experiment artifacts
 preprocessed/
