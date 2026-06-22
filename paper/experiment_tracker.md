@@ -9,7 +9,7 @@
 | Figshare | 已完成 | `data/processed/Figshare` | Hugging Face 镜像，train=2522, test=542 |
 | BraTS | 未找到 | `data/processed/BraTS` | 当前机器没有原实验数据；需要官方授权或提供已预处理数据 |
 | Shanghai | 未找到 | `data/processed/Shanghai` | 当前机器没有原实验数据；可能是私有数据 |
-| Brisc2025 | 未找到 | `data/processed/Brisc2025` | 当前机器没有原实验数据；需要确认来源和许可证 |
+| Brisc2025 | 原始数据未找到；公开替代数据已部分生成 | `data/processed/Brisc2025` | 当前已有 `Simezu/brain-tumour-MRI-scan` 生成的 300 个 `no_tumor` 样本，仅用于链路验证 |
 | Yale | 未找到 | `data/processed/Yale` | 可作为外部验证客户端，当前无数据 |
 
 ## 已完成工程验证
@@ -22,8 +22,10 @@
 | FedMFG 单客户端 smoke train | 完成 | `paper_outputs/smoke_figshare_mfg/history.json` |
 | FedMFG 单客户端 smoke test | 完成 | `paper_outputs/smoke_figshare_mfg/test_predictions.json` |
 | 混淆矩阵生成 | 完成 | `paper_outputs/smoke_figshare_mfg/confusion/` |
+| FedMFG 公开双客户端 smoke train/test | 完成 | `paper_outputs/smoke_public_2client_mfg/history.json` |
 
 说明：smoke test 只使用 `Figshare` 的 24 个样本，用于验证代码链路，不作为论文结果。
+公开双客户端 smoke test 使用 `Figshare` 和 `Brisc2025` 替代客户端各 24 个样本，其中 `Brisc2025` 当前只有 `no_tumor` 类，因此也不作为论文结果。
 
 ## 主实验状态
 
@@ -81,6 +83,7 @@ Client/
 - 使用 BraTS/FeTS 构造多个 3D 客户端。
 - 使用 Figshare + 其他公开 2D 脑肿瘤分类数据构造多个 2D 客户端。
 - 明确论文中写作“公开数据模拟异构联邦场景”，而不是声称真实多医院私有数据。
+- `Simezu/brain-tumour-MRI-scan` 可作为公开 2D 替代数据，但 Hugging Face 单文件流式下载较慢；正式实验建议改用 Kaggle/Zenodo/Figshare 压缩包离线下载后预处理。
 
 ## 当前论文风险
 

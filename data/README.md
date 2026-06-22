@@ -72,7 +72,14 @@ np.savez_compressed("t1c.npz", x=image_array.astype("float32"))
 
 用途：补充 2D 单模态客户端，模拟真实多中心分类数据差异。
 
-注意：需要确认具体数据来源、类别定义和许可证，避免把不同任务标签混用。
+公开可用来源：
+
+- BRISC2025: https://www.kaggle.com/datasets/briscdataset/brisc2025/
+- BRISC Figshare DOI: https://doi.org/10.6084/m9.figshare.30533120
+- BRISC Zenodo DOI: https://doi.org/10.5281/zenodo.17524350
+- Hugging Face 替代公开集: https://huggingface.co/datasets/Simezu/brain-tumour-MRI-scan
+
+注意：需要确认具体数据来源、类别定义和许可证，避免把不同任务标签混用。`Simezu/brain-tumour-MRI-scan` 是 Figshare、SARTAJ、Br35H 的组合公开集，适合先做公开可复现实验；如果拿到正式 BRISC2025 原始包，应优先替换成正式 BRISC2025。
 
 ### 4. Shanghai / Yale 私有或半公开数据
 
@@ -103,6 +110,25 @@ python data/scripts/preprocess_figshare_hf.py \
 ```
 
 该镜像已提供 patient-level 的 train/test 划分，适合快速补充 2D 分类客户端。
+
+### Simezu Hugging Face 公开组合数据
+
+限量下载，用于快速构造第二个 2D 客户端：
+
+```bash
+python data/scripts/preprocess_simezu_hf.py \
+  --output_dir data/processed/Brisc2025 \
+  --max_samples_per_class 300
+```
+
+全量下载，用于公开可复现实验：
+
+```bash
+python data/scripts/preprocess_simezu_hf.py \
+  --output_dir data/processed/Brisc2025
+```
+
+该脚本把标签映射为 `no_tumor/glioma/meningioma/pituitary`，模态保存为 `t1.npz`。
 
 ### 数据统计表
 

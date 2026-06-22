@@ -91,16 +91,16 @@ pip install torch monai numpy scikit-learn matplotlib tqdm
 
 ## 数据目录要求
 
-默认数据根目录在训练脚本中写为：
+默认数据根目录已经改为项目内相对路径：
 
 ```text
-/data/zikun_workspace/preprocessed
+data/processed
 ```
 
 数据组织方式应类似：
 
 ```text
-preprocessed/
+data/processed/
   BraTS/
     train/
       glioma/
@@ -155,6 +155,24 @@ bash scripts/test/test_mfg.sh --checkpoint checkpoints/fedmfg/best_checkpoint.pt
 | FedMFG | 90.25 | 90.29 |
 
 当前 JSON 结果中，`fd`、`fedgh`、`fedmm`、`fedproto`、`fedtgp` 和 `local` 已有测试记录；`fedmfg_history.json` 主要记录了验证集结果，尚未完整保存最终测试结果。因此开源和投稿前，需要重新跑一次标准测试并导出正式结果 JSON。
+
+## 当前推进状态
+
+已完成：
+
+- 建立 `data/` 数据目录规范。
+- 完成 `Figshare` Hugging Face 镜像预处理，得到 `data/processed/Figshare`。
+- 新增 `Simezu/brain-tumour-MRI-scan` 预处理脚本，可作为 `Brisc2025` 的公开替代路线。
+- 跑通 `Figshare` 单客户端 FedMFG smoke test。
+- 跑通 `Figshare + Brisc2025替代` 双客户端 FedMFG smoke test。
+- 新增论文初稿框架：`paper/outline.md`。
+- 新增实验追踪表：`paper/experiment_tracker.md`。
+
+仍然阻塞正式论文实验的关键问题：
+
+- 当前机器没有 `BraTS`、`Shanghai` 和正式 `Brisc2025` 原始/预处理数据。
+- `Simezu` 的 Hugging Face 流式下载较慢，正式实验建议使用 Kaggle、Figshare 或 Zenodo 压缩包离线下载后预处理。
+- 现有 smoke test 只用于验证代码链路，不可作为论文结果。
 
 ## 论文潜力判断
 
