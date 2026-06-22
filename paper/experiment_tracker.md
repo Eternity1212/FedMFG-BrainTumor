@@ -49,11 +49,31 @@
 
 | 实验 | 状态 | 输出 |
 | --- | --- | --- |
-| seed42 baseline（local/fedgh/fedproto/fedtgp/fedmm/fedamm/fedmfg） | 进行中 | `paper_outputs/public_4client/summary_seed42.csv` |
+| seed42 fedmfg（10 轮） | 已完成 | `paper_outputs/public_4client/histories/fedmfg_seed42_history.json` |
+| seed42 baseline 其余算法（local/fedgh/fedproto/fedtgp/fedmm/fedamm） | 进行中 | `paper_outputs/public_4client/summary_seed42.csv` |
 | seed43 baseline | 待运行 | `paper_outputs/public_4client/summary_seed43.csv` |
 | seed44 baseline | 待运行 | `paper_outputs/public_4client/summary_seed44.csv` |
 | 多 seed 汇总 | 待运行 | `paper_outputs/public_4client/summary_all_seeds.csv` |
 | FedMFG 消融 seed42 | 待运行 | `paper_outputs/public_4client_ablation/summary_seed42.csv` |
+
+## 本轮观察与迭代决策（2026-06-22 晚）
+
+第一份正式结果（FedMFG seed42，lr=3e-4，10 轮，已稳定收敛）：
+
+| 客户端 | 形态 | test n | Acc | Macro-F1 |
+| --- | --- | --- | --- | --- |
+| Figshare | 2D | 90 | 0.93 | 0.93 |
+| Brisc2025 | 2D | 120 | 0.67 | 0.66 |
+| BraTS | 3D | 4 | 0.50 | 0.50 |
+| Shanghai | 3D | 4 | 0.50 | 0.33 |
+| 平均（val） | — | — | 0.77 | 0.76 |
+
+**问题诊断**：FedMFG 整体收敛健康（loss 11→0.78，2D 客户端表现强），但两个 3D 客户端测试集只有 n=4、训练只有 36 例，准确率卡在 0.50（二分类随机水平），即 3D 端**样本太少根本学不动**。这会让“3D 多模态/模态缺失”这一核心卖点在论文中站不住，且 3D 上的 baseline 对比也没有意义。
+
+**迭代决策**：
+1. 让当前套件先跑完，拿到 2D 主导指标上的完整 baseline 对比（用于链路与 2D 结论的 sanity）。
+2. 下一轮迭代必须扩大 3D 客户端规模：从 HF BraTS2023（GLI+MEN，每库上千 case）多取样本，目标每个 3D 客户端 train≥120 / test≥40，类别保持平衡；分辨率维持 32×112×112 / 16×112×112 以兼顾 CPU 时间。
+3. 扩样后重跑 4 客户端多 seed baseline + FedMFG 消融，确保 3D 端有真实可学习信号，再据此判断 FedMFG 是否占优。
 
 ## 消融实验状态
 
