@@ -19,7 +19,6 @@ env/
 *.docx
 
 # Large experiment artifacts
-data/
 preprocessed/
 checkpoints/
 Graduation-Design-main/checkpoints/
@@ -37,7 +36,21 @@ runs/
 # Literature PDFs are kept locally; commit the literature index instead.
 文献资料/*.pdf
 
-# Keep result summaries, but avoid accidental raw datasets.
+# Local datasets are kept under data/ but are not committed.
+data/raw/
+data/processed/
+data/external/
+data/**/*.zip
+data/**/*.tar
+data/**/*.tar.gz
+data/**/*.nii
+data/**/*.nii.gz
+data/**/*.npy
+data/**/*.npz
+data/**/*.mat
+data/**/*.h5
+
+# Keep result summaries, but avoid accidental raw datasets elsewhere.
 *.nii
 *.nii.gz
 *.npy
