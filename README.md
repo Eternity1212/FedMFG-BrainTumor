@@ -167,6 +167,7 @@ bash scripts/test/test_mfg.sh --checkpoint checkpoints/fedmfg/best_checkpoint.pt
 - 跑通 `Figshare` 单客户端 FedMFG smoke test。
 - 跑通 `Figshare + Brisc2025替代` 双客户端 FedMFG smoke test。
 - 跑通 `Figshare + 正式 BRISC2025` 公开双客户端 baseline 链路检查，输出 `paper_outputs/public_2client/summary.csv`。
+- 跑通 `Figshare + 正式 BRISC2025` 公开双客户端 FedMFG 消融链路检查，输出 `paper_outputs/public_2client_ablation/summary.csv`。
 - 新增论文初稿框架：`paper/outline.md`。
 - 新增实验追踪表：`paper/experiment_tracker.md`。
 
@@ -174,7 +175,7 @@ bash scripts/test/test_mfg.sh --checkpoint checkpoints/fedmfg/best_checkpoint.pt
 
 - 当前机器仍然没有 `BraTS` 和 `Shanghai` 原始/预处理数据。
 - 当前机器无 CUDA/MPS，只能 CPU 训练；全量正式实验会很慢，建议使用 GPU 或分批长时间运行。
-- 现有 smoke test 和 `MAX_SAMPLES=80` 链路检查只用于验证代码链路，不可作为论文正式结果。
+- 现有 smoke test、`MAX_SAMPLES=80` baseline 链路检查和 `MAX_SAMPLES=16` 消融链路检查只用于验证代码链路，不可作为论文正式结果。
 
 ## 论文潜力判断
 

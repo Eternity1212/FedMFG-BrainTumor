@@ -185,6 +185,20 @@ Multi-center brain tumor diagnosis requires models that can learn from distribut
 - w/o head calibration loss
 - uniform head aggregation
 
+公开双客户端消融链路检查：
+
+| Variant | Accuracy (%) | Macro F1 (%) | Setting |
+| --- | ---: | ---: | --- |
+| Full FedMFG | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+| w/o modality gate | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+| w/o combo prototype | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+| w/o teacher prototype | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+| w/o prototype alignment loss | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+| w/o head calibration loss | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+| uniform head aggregation | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+
+该表只证明消融代码开关均能运行。正式消融需要更大样本量、更多轮数和多随机种子。
+
 ### 4.6 Missing-modality robustness
 
 待补：

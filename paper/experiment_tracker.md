@@ -26,10 +26,12 @@
 | BRISC2025 Zenodo 下载与预处理 | 完成 | `data/raw/brisc2025/brisc2025.zip`, `data/processed/Brisc2025` |
 | Figshare + BRISC2025 数据统计 | 完成 | `paper_outputs/public_2client_dataset_summary.csv` |
 | 公开双客户端 baseline 链路检查 | 完成 | `paper_outputs/public_2client/summary.csv` |
+| 公开双客户端 FedMFG 消融链路检查 | 完成 | `paper_outputs/public_2client_ablation/summary.csv` |
 
 说明：smoke test 只使用 `Figshare` 的 24 个样本，用于验证代码链路，不作为论文结果。
 公开双客户端 smoke test 使用 `Figshare` 和 `Brisc2025` 替代客户端各 24 个样本，其中 `Brisc2025` 当前只有 `no_tumor` 类，因此也不作为论文结果。
 最新公开双客户端 baseline 链路检查使用 `Figshare + 正式 BRISC2025`，`ROUNDS=2`、`MAX_SAMPLES=80`，用于验证 `local/fedgh/fedproto/fedtgp/fedmm/fedamm/fedmfg` 在正式数据上均可运行。该设置样本量太小，所有算法测试指标接近或达到 100%，不能作为论文主结果。
+公开双客户端 FedMFG 消融链路检查使用 `ROUNDS=1`、`MAX_SAMPLES=16`，用于验证所有消融开关可运行，不作为论文主结果。
 
 ## 主实验状态
 
@@ -48,13 +50,13 @@
 
 | 消融变体 | 脚本支持 | 正式结果 |
 | --- | --- | --- |
-| Full FedMFG | 已支持 | 未跑 |
-| w/o modality gate | 已支持 | 未跑 |
-| w/o combo prototype | 已支持 | 未跑 |
-| w/o teacher prototype | 已支持 | 未跑 |
-| w/o prototype alignment loss | 已支持 | 未跑 |
-| w/o head calibration loss | 已支持 | 未跑 |
-| uniform head aggregation | 已支持 | 未跑 |
+| Full FedMFG | 已支持 | 链路检查完成；正式结果未跑 |
+| w/o modality gate | 已支持 | 链路检查完成；正式结果未跑 |
+| w/o combo prototype | 已支持 | 链路检查完成；正式结果未跑 |
+| w/o teacher prototype | 已支持 | 链路检查完成；正式结果未跑 |
+| w/o prototype alignment loss | 已支持 | 链路检查完成；正式结果未跑 |
+| w/o head calibration loss | 已支持 | 链路检查完成；正式结果未跑 |
+| uniform head aggregation | 已支持 | 链路检查完成；正式结果未跑 |
 
 ## 下一步需要的数据动作
 
