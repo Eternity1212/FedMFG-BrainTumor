@@ -15,30 +15,51 @@ GLOBAL_LABEL_MAP = {
 
 GLOBAL_MODALITIES = ["t1", "t1c", "t2w", "t2f"]
 
+
+def _shape_from_env(env_name, default_shape):
+    """Allow overriding a client's spatial shape via environment variables.
+
+    This is used to run CPU-feasible low-resolution experiments without
+    touching the data-reading code. Format: comma/x separated ints, e.g.
+    ``FDU_BRATS_SHAPE="32,112,112"`` or ``FDU_FIGSHARE_SHAPE="128x128"``.
+    The default values keep the original full-resolution behaviour for GPU.
+    """
+    raw = os.environ.get(env_name)
+    if not raw:
+        return default_shape
+    parts = [token for token in raw.replace("x", ",").split(",") if token.strip()]
+    parsed = tuple(int(token) for token in parts)
+    if len(parsed) != len(default_shape):
+        raise ValueError(
+            f"{env_name} must have {len(default_shape)} dimensions, got '{raw}'."
+        )
+    return parsed
+
+
 CLIENT_SPECS = {
     "BraTS": {
         "modalities": ["t1", "t1c", "t2w", "t2f"],
-        "shape": (155, 224, 224),
+        "shape": _shape_from_env("FDU_BRATS_SHAPE", (155, 224, 224)),
         "is_3d": True,
     },
     "Shanghai": {
         "modalities": ["t1c", "t2f"],
-        "shape": (16, 224, 224),
+        "shape": _shape_from_env("FDU_SHANGHAI_SHAPE", (16, 224, 224)),
         "is_3d": True,
     },
     "Yale": {
         "modalities": ["t1c", "t2f"],
-        "shape": (155, 224, 224),
+        "shape": _shape_from_env("FDU_YALE_SHAPE", (155, 224, 224)),
         "is_3d": True,
     },
     "Figshare": {
         "modalities": ["t1c"],
-        "shape": (512, 512),
+        "shape": _shape_from_env("FDU_FIGSHARE_SHAPE", (512, 512)),
         "is_3d": False,
     },
     "Brisc2025": {
         "modalities": ["t1"],
-        "shape": (512, 512),
+        "shape": _shape_from_env("FDU_BRISC2025_SHAPE", (512, 512)),
         "is_3d": False,
     },
 }

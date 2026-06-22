@@ -2,6 +2,7 @@
 """Convert official BRISC2025 classification images to project npz format."""
 
 import argparse
+import random
 import shutil
 import tempfile
 import zipfile
@@ -29,6 +30,19 @@ def parse_args():
     parser.add_argument("--client_name", default="Brisc2025")
     parser.add_argument("--modality", default="t1")
     parser.add_argument("--image_size", type=int, default=512)
+    parser.add_argument(
+        "--max_per_class_train",
+        type=int,
+        default=None,
+        help="Optional class-balanced cap on train images per class.",
+    )
+    parser.add_argument(
+        "--max_per_class_test",
+        type=int,
+        default=None,
+        help="Optional class-balanced cap on test images per class.",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Shuffle seed for balanced subsampling.")
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
@@ -53,8 +67,34 @@ def find_classification_root(extract_dir):
     return matches[0]
 
 
-def convert_archive(zip_path, output_dir, client_name, modality, image_size):
+def _select_balanced(image_paths, max_per_class, seed):
+    """Return a class-balanced, shuffled subset keeping at most N per class."""
+    if max_per_class is None:
+        return image_paths
+    rng = random.Random(seed)
+    by_label = {}
+    for path in image_paths:
+        by_label.setdefault(normalize_label(path.parent.name), []).append(path)
+    selected = []
+    for label_name in sorted(by_label):
+        paths = list(by_label[label_name])
+        rng.shuffle(paths)
+        selected.extend(sorted(paths[:max_per_class]))
+    return selected
+
+
+def convert_archive(
+    zip_path,
+    output_dir,
+    client_name,
+    modality,
+    image_size,
+    max_per_class_train=None,
+    max_per_class_test=None,
+    seed=42,
+):
     counts = {}
+    caps = {"train": max_per_class_train, "test": max_per_class_test}
     with tempfile.TemporaryDirectory(prefix="brisc2025_") as tmp:
         extract_dir = Path(tmp)
         with zipfile.ZipFile(zip_path) as archive:
@@ -71,6 +111,7 @@ def convert_archive(zip_path, output_dir, client_name, modality, image_size):
                 for path in split_dir.rglob("*")
                 if path.suffix.lower() in {".jpg", ".jpeg", ".png"}
             )
+            image_paths = _select_balanced(image_paths, caps[split], seed)
             for image_path in tqdm(image_paths, desc=f"BRISC2025 {split}"):
                 label_name = normalize_label(image_path.parent.name)
                 sample_id = image_path.stem
@@ -103,6 +144,9 @@ def main():
         client_name=args.client_name,
         modality=args.modality,
         image_size=args.image_size,
+        max_per_class_train=args.max_per_class_train,
+        max_per_class_test=args.max_per_class_test,
+        seed=args.seed,
     )
 
     print("BRISC2025 preprocessing complete.")

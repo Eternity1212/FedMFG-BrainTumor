@@ -1,16 +1,21 @@
 # 实验追踪表
 
-更新时间：2026-06-22
+更新时间：2026-06-22（晚间更新：补齐公开 3D 客户端 + 低分辨率 CPU 可跑数据）
 
 ## 数据状态
 
 | 数据/客户端 | 状态 | 本地路径 | 说明 |
 | --- | --- | --- | --- |
-| Figshare | 已完成 | `data/processed/Figshare` | Hugging Face 镜像，train=2522, test=542 |
-| BraTS | 未找到 | `data/processed/BraTS` | 当前机器没有原实验数据；需要官方授权或提供已预处理数据 |
-| Shanghai | 未找到 | `data/processed/Shanghai` | 当前机器没有原实验数据；可能是私有数据 |
-| Brisc2025 | 已完成正式公开源下载与预处理 | `data/processed/Brisc2025` | Zenodo DOI `10.5281/zenodo.17524350`，train=5000, test=1000，四类完整 |
-| Yale | 未找到 | `data/processed/Yale` | 可作为外部验证客户端，当前无数据 |
+| Figshare | 已完成（128×128） | `data/processed/Figshare` | Hugging Face 镜像，2D t1c，train=2522, test=542，3 类 |
+| BraTS | 已用公开数据替代完成 | `data/processed/BraTS` | BraTS2023 GLI(glioma)+MEN(meningioma)，3D 四模态 32×112×112，train=36, test=12，2 类 |
+| Shanghai | 已用公开数据替代完成 | `data/processed/Shanghai` | 同源 BraTS2023 抽取 t1c+t2f 模拟双模态 3D 客户端 16×112×112，train=36, test=12，2 类 |
+| Brisc2025 | 已完成正式公开源（128×128） | `data/processed/Brisc2025` | Zenodo DOI `10.5281/zenodo.17524350`，2D t1，train=5000, test=1000，四类完整 |
+| Yale | 未使用 | `data/processed/Yale` | 可作为外部验证客户端，当前无数据 |
+
+说明：
+- `BraTS`/`Shanghai` 使用的是公开 BraTS2023（GLI + MEN）NIfTI 数据，CC BY 4.0，来源 Hugging Face `Angelou0516/brats2023-gli-dataset` 与 `Angelou0516/brats2023-men-dataset`。论文中必须写明：这是“用公开多模态数据模拟模态缺失/异构联邦场景”，其中 `Shanghai` 是从同源数据抽取 t1c+t2f 构造的 partial-modality 3D 客户端，并非原私有上海医院数据。
+- 为在仅 CPU 的机器上可完成训练，3D 体数据用三线性插值重采样到 32×112×112（BraTS）/16×112×112（Shanghai），2D 图像重采样到 128×128。`dataset.py` 通过环境变量 `FDU_BRATS_SHAPE/FDU_SHANGHAI_SHAPE/FDU_FIGSHARE_SHAPE/FDU_BRISC2025_SHAPE` 控制分辨率，默认仍是全分辨率（供 GPU 全量复现）。
+- 该 4 客户端构成真实的异构联邦设定：2D/3D 混合、模态组合不同（t1c / t1 / t1c+t2f / 四模态全模态）、标签空间不同（各客户端 2~4 类，全局 4 类有效标签）。
 
 ## 已完成工程验证
 
@@ -33,18 +38,22 @@
 最新公开双客户端 baseline 链路检查使用 `Figshare + 正式 BRISC2025`，`ROUNDS=2`、`MAX_SAMPLES=80`，用于验证 `local/fedgh/fedproto/fedtgp/fedmm/fedamm/fedmfg` 在正式数据上均可运行。该设置样本量太小，所有算法测试指标接近或达到 100%，不能作为论文主结果。
 公开双客户端 FedMFG 消融链路检查使用 `ROUNDS=1`、`MAX_SAMPLES=16`，用于验证所有消融开关可运行，不作为论文主结果。
 
-## 主实验状态
+## 公开 4 客户端正式实验（低分辨率，CPU）
 
-| 实验 | 状态 | 阻塞原因 |
+配置：`global_rounds=12`、`local_epochs=1`、`batch_size=16`、`client_batch_size_map BraTS=2 Shanghai=4 Figshare=32 Brisc2025=32`、`resnet18`、`prototype_dim=128`、全量样本（无 max_samples）、server 早停 patience=5。多 seed：42/43/44。
+
+脚本：
+- baseline：`experiments/run_public_4client_baselines.sh`
+- 多 seed：`experiments/run_public_4client_multiseed.sh`
+- 消融：`experiments/run_public_4client_mfg_ablation.sh`
+
+| 实验 | 状态 | 输出 |
 | --- | --- | --- |
-| Local 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
-| FD 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
-| FedGH 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
-| FedProto 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
-| FedTGP 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
-| FedMM 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐 |
-| FedAMM 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐，历史 JSON 缺正式 test 结果 |
-| FedMFG 4 客户端正式复现 | 未开始 | 缺少 BraTS/Shanghai；Brisc2025 已补齐，历史 JSON 缺正式 test 结果 |
+| seed42 baseline（local/fedgh/fedproto/fedtgp/fedmm/fedamm/fedmfg） | 进行中 | `paper_outputs/public_4client/summary_seed42.csv` |
+| seed43 baseline | 待运行 | `paper_outputs/public_4client/summary_seed43.csv` |
+| seed44 baseline | 待运行 | `paper_outputs/public_4client/summary_seed44.csv` |
+| 多 seed 汇总 | 待运行 | `paper_outputs/public_4client/summary_all_seeds.csv` |
+| FedMFG 消融 seed42 | 待运行 | `paper_outputs/public_4client_ablation/summary_seed42.csv` |
 
 ## 消融实验状态
 

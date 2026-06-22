@@ -153,6 +153,57 @@ python data/scripts/preprocess_brisc2025.py \
 
 该数据包含 `glioma/meningioma/pituitary/no_tumor` 四类，保存为 `t1.npz`，最适合替换当前只用于链路验证的 `Simezu` 部分数据。
 
+### 公开 3D 多模态客户端（已采用，BraTS2023 GLI + MEN）
+
+用 Hugging Face 上 CC BY 4.0 的 BraTS2023 公开 NIfTI 数据构造两个 3D 客户端：
+
+- `BraTS`：四模态全模态 3D 客户端（t1, t1c, t2w, t2f）。
+- `Shanghai`：从同源数据抽取 t1c+t2f，模拟双模态 partial-modality 3D 客户端（不是原私有上海医院数据）。
+
+类别：glioma 来自 `Angelou0516/brats2023-gli-dataset`，meningioma 来自 `Angelou0516/brats2023-men-dataset`。
+
+```bash
+# 需要 nibabel：python3 -m pip install --target .deps nibabel
+PYTHONPATH=.deps python3 data/scripts/preprocess_brats_3d_hf.py \
+  --output_root data/processed \
+  --brats_cases_per_class 24 \
+  --shanghai_cases_per_class 24 \
+  --brats_shape 32,112,112 \
+  --shanghai_shape 16,112,112 \
+  --test_ratio 0.25 \
+  --overwrite
+```
+
+说明：体数据使用三线性插值重采样到指定分辨率，便于在仅 CPU 的机器上完成训练。论文中需写明这是“用公开多模态数据模拟模态缺失/异构联邦场景”。
+
+### 2D 客户端类平衡子集（CPU 友好）
+
+为让 2D 客户端与 3D 客户端规模可比、且类别均衡，可对 2D 数据做按类平衡下采样并重采样到 128×128：
+
+```bash
+python3 data/scripts/preprocess_brisc2025.py \
+  --zip_path data/raw/brisc2025/brisc2025.zip \
+  --output_dir data/processed/Brisc2025 \
+  --image_size 128 --max_per_class_train 300 --max_per_class_test 80 --seed 42 --overwrite
+
+python3 data/scripts/preprocess_figshare_hf.py \
+  --output_dir data/processed/Figshare \
+  --image_size 128 --max_per_class_train 300 --max_per_class_test 80 --overwrite
+```
+
+### 分辨率配置（训练侧）
+
+`Graduation-Design-main/dataset.py` 支持用环境变量覆盖各客户端空间尺寸（默认全分辨率，供 GPU 全量复现）：
+
+```bash
+export FDU_BRATS_SHAPE="32,112,112"
+export FDU_SHANGHAI_SHAPE="16,112,112"
+export FDU_FIGSHARE_SHAPE="128,128"
+export FDU_BRISC2025_SHAPE="128,128"
+```
+
+实验脚本 `experiments/run_public_4client_*.sh` 已自动设置这些变量。
+
 ### Simezu Hugging Face 公开组合数据
 
 限量下载，用于快速构造第二个 2D 客户端：

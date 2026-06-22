@@ -161,21 +161,35 @@ bash scripts/test/test_mfg.sh --checkpoint checkpoints/fedmfg/best_checkpoint.pt
 已完成：
 
 - 建立 `data/` 数据目录规范。
-- 完成 `Figshare` Hugging Face 镜像预处理，得到 `data/processed/Figshare`。
-- 新增 `Simezu/brain-tumour-MRI-scan` 预处理脚本，可作为 `Brisc2025` 的公开替代路线。
-- 完成正式 `BRISC2025` Zenodo 数据下载与预处理，得到 `data/processed/Brisc2025`，共 train=5000、test=1000。
-- 跑通 `Figshare` 单客户端 FedMFG smoke test。
-- 跑通 `Figshare + Brisc2025替代` 双客户端 FedMFG smoke test。
-- 跑通 `Figshare + 正式 BRISC2025` 公开双客户端 baseline 链路检查，输出 `paper_outputs/public_2client/summary.csv`。
-- 跑通 `Figshare + 正式 BRISC2025` 公开双客户端 FedMFG 消融链路检查，输出 `paper_outputs/public_2client_ablation/summary.csv`。
-- 新增论文初稿框架：`paper/outline.md`。
-- 新增实验追踪表：`paper/experiment_tracker.md`。
+- 完成 `Figshare` 与正式 `BRISC2025`（Zenodo）2D 客户端预处理。
+- 用公开 BraTS2023（GLI glioma + MEN meningioma，CC BY 4.0，Hugging Face）构造了两个 3D 客户端，解决了缺少 `BraTS/Shanghai` 的阻塞：
+  - `BraTS`：四模态全模态 3D 客户端（t1, t1c, t2w, t2f）。
+  - `Shanghai`：从同源数据抽取 t1c+t2f，模拟双模态 partial-modality 3D 客户端（非原私有数据）。
+- 为仅 CPU 的机器建立可完成训练的低分辨率、类平衡公开 4 客户端数据集：
 
-仍然阻塞正式论文实验的关键问题：
+  | 客户端 | 模态 | 形态 | 类别 | train/test |
+  | --- | --- | --- | --- | --- |
+  | BraTS | t1,t1c,t2w,t2f | 3D 32×112×112 | glioma, meningioma | 36 / 12 |
+  | Shanghai | t1c,t2f | 3D 16×112×112 | glioma, meningioma | 36 / 12 |
+  | Figshare | t1c | 2D 128×128 | glioma, meningioma, pituitary | 900 / 240 |
+  | Brisc2025 | t1 | 2D 128×128 | glioma, meningioma, pituitary, no_tumor | 1200 / 320 |
 
-- 当前机器仍然没有 `BraTS` 和 `Shanghai` 原始/预处理数据。
-- 当前机器无 CUDA/MPS，只能 CPU 训练；全量正式实验会很慢，建议使用 GPU 或分批长时间运行。
-- 现有 smoke test、`MAX_SAMPLES=80` baseline 链路检查和 `MAX_SAMPLES=16` 消融链路检查只用于验证代码链路，不可作为论文正式结果。
+  这是一个真实异构联邦设定：2D/3D 混合、模态组合不同、各客户端标签空间不同。
+- 新增数据脚本：`data/scripts/preprocess_brats_3d_hf.py`（多类 3D）、为 2D 脚本增加 `--image_size` 与按类平衡 `--max_per_class_*`。
+- `dataset.py` 支持用环境变量 `FDU_*_SHAPE` 配置分辨率（默认全分辨率，供 GPU 复现）。
+- 新增正式实验脚本：`experiments/run_public_4client_baselines.sh`、`run_public_4client_multiseed.sh`、`run_public_4client_mfg_ablation.sh`、`run_public_4client_full_suite.sh`。
+- 新增多 seed 聚合脚本：`paper_tools/aggregate_multiseed.py`。
+- 新增论文初稿框架 `paper/outline.md` 与实验追踪表 `paper/experiment_tracker.md`。
+
+进行中：
+
+- 正在后台运行公开 4 客户端正式实验：3 个随机种子（42/43/44）× 7 个算法（local/fedgh/fedproto/fedtgp/fedmm/fedamm/fedmfg）× 12 轮，外加 FedMFG 7 项消融（seed 42）。
+- 早期收敛正常（FedMFG 验证准确率从约 0.29 稳步上升），结果落地后将写入 `paper/outline.md` 主表与消融表。
+
+说明与限制：
+
+- 当前机器无 CUDA/MPS，只能 CPU 训练；因此正式实验采用低分辨率 + 类平衡子集，约 6 分钟/轮。全分辨率全量复现建议在 GPU 上进行（数据脚本与训练代码均已支持）。
+- `BraTS/Shanghai` 为公开数据模拟的异构/缺失模态客户端，论文写作中不得声称为真实私有多医院数据。
 
 ## 论文潜力判断
 
