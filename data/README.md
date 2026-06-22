@@ -80,6 +80,40 @@ np.savez_compressed("t1c.npz", x=image_array.astype("float32"))
 
 注意：如果涉及私有医学数据，论文中必须说明伦理审批、脱敏方式、数据不可公开原因。
 
+## 已提供脚本
+
+### Figshare 原始版
+
+```bash
+bash data/scripts/download_figshare.sh
+python data/scripts/preprocess_figshare.py \
+  --raw_dir data/raw/figshare \
+  --output_dir data/processed/Figshare \
+  --overwrite
+```
+
+说明：原始 Figshare 下载在部分网络环境下可能返回 403。如果遇到这种情况，优先使用下面的 Hugging Face 镜像路径。
+
+### Figshare Hugging Face 镜像版
+
+```bash
+python data/scripts/preprocess_figshare_hf.py \
+  --output_dir data/processed/Figshare \
+  --overwrite
+```
+
+该镜像已提供 patient-level 的 train/test 划分，适合快速补充 2D 分类客户端。
+
+### 数据统计表
+
+```bash
+python data/scripts/summarize_dataset.py \
+  --processed_dir data/processed \
+  --output_csv paper_outputs/dataset_summary.csv
+```
+
+输出可以直接整理成论文中的数据集统计表。
+
 ## 后续预处理目标
 
 需要统一完成：

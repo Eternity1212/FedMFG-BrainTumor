@@ -246,6 +246,8 @@ def _client_eval_ddp_worker(rank, world_size, worker_config, result_queue):
                         "accuracy": accuracy,
                         "macro_f1": macro_f1,
                         "num_samples": total_samples_value,
+                        "labels": merged_labels,
+                        "preds": merged_preds,
                     }
                 )
             )
@@ -271,6 +273,7 @@ class Client:
         self.seed = args.seed
         self.parallel = getattr(args, "parallel", False)
         self.model_mode = getattr(args, "model_mode", "auto")
+        self.collect_predictions = bool(getattr(args, "collect_predictions", False))
         self.enable_model_offload = not self.parallel and self.device.type == "cuda"
         self.amp_enabled = bool(getattr(args, "amp", True)) and self.device.type == "cuda"
         self.num_workers = max(int(getattr(args, "num_workers", 4)), 0)
@@ -324,6 +327,7 @@ class Client:
             dropout=self.dropout,
             model_mode=self.model_mode,
             algo=getattr(args, "algo", None),
+            mfg_disable_modality_gate=getattr(args, "mfg_disable_modality_gate", False),
         ).to(initial_device)
         self.loss_fn = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.AdamW(
@@ -615,6 +619,11 @@ class Client:
             "accuracy": accuracy,
             "macro_f1": macro_f1,
             "num_samples": total_samples,
+            **(
+                {"labels": all_labels, "preds": all_preds}
+                if self.collect_predictions
+                else {}
+            ),
         }
 
     def evaluate_split(self, split):

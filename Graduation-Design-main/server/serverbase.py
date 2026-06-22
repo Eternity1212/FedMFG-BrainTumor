@@ -766,15 +766,17 @@ class Server:
 
         per_client_results = []
         for client, item in zip(target_clients, metrics):
-            per_client_results.append(
-                {
-                    "client_name": client.client_name,
-                    "num_samples": item["num_samples"],
-                    "loss": item["loss"],
-                    "accuracy": item["accuracy"],
-                    "macro_f1": item["macro_f1"],
-                }
-            )
+            client_result = {
+                "client_name": client.client_name,
+                "num_samples": item["num_samples"],
+                "loss": item["loss"],
+                "accuracy": item["accuracy"],
+                "macro_f1": item["macro_f1"],
+            }
+            if getattr(self.args, "collect_predictions", False):
+                client_result["labels"] = item.get("labels", [])
+                client_result["preds"] = item.get("preds", [])
+            per_client_results.append(client_result)
 
         per_client_acc = [item["accuracy"] for item in per_client_results]
         per_client_f1 = [item["macro_f1"] for item in per_client_results]

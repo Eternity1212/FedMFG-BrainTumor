@@ -111,6 +111,8 @@ def build_arg_parser():
                         help="Write history.json every N logged training steps; <=0 disables step-based auto-save")
     parser.add_argument("--plot_refresh_gap_steps", type=int, default=50,
                         help="Refresh training plots every N logged training steps; <=0 disables step-based auto-plot")
+    parser.add_argument("--collect_predictions", action="store_true",
+                        help="[test/analysis] Include per-client labels and predictions in evaluation summaries")
 
     parser.add_argument("--local_epochs",        type=int,   default=1)
     parser.add_argument("--local_learning_rate", type=float, default=1e-3)
@@ -175,8 +177,14 @@ def build_arg_parser():
     parser.add_argument("--mfg_head_beta",        type=float, default=1.0,
                         help="[FedMFG] Strength of modality-completeness weighting in head aggregation")
     parser.add_argument("--mfg_head_weight_mode", type=str, default="rho_eta",
-                        choices=["rho", "rho_eta"],
+                        choices=["uniform", "rho", "rho_eta"],
                         help="[FedMFG] Unified classifier-head aggregation weight: prototype consistency only, or prototype consistency plus modality completeness")
+    parser.add_argument("--mfg_disable_teacher", action="store_true",
+                        help="[FedMFG ablation] Disable teacher prototypes sent from the server")
+    parser.add_argument("--mfg_disable_combo_prototype", action="store_true",
+                        help="[FedMFG ablation] Disable global combo-prototype aggregation and prototype payloads")
+    parser.add_argument("--mfg_disable_modality_gate", action="store_true",
+                        help="[FedMFG ablation] Use uniform weights over available modalities instead of learned modality gating")
     parser.add_argument("--margin_threshold",     type=float, default=1.0,
                         help="[FedTGP] Margin threshold for prototype separation")
     parser.add_argument("--early_stopping_patience", type=int, default=5,

@@ -243,6 +243,7 @@ class MFGModel(MMModel):
         model_name="resnet18",
         prototype_dim=256,
         dropout=0.0,
+        disable_modality_gate=False,
     ):
         super().__init__(
             client_name=client_name,
@@ -251,6 +252,7 @@ class MFGModel(MMModel):
             prototype_dim=prototype_dim,
             dropout=dropout,
         )
+        self.disable_modality_gate = bool(disable_modality_gate)
         embedding_dim = int(prototype_dim)
         if embedding_dim <= 0:
             embedding_dim = self.backbone_dim
@@ -296,12 +298,15 @@ class MFGModel(MMModel):
     def encode(self, x):
         modality_features, modality_mask = self.extract_modality_features(x)
         projected_features = self._project_modality_features(modality_features)
-        gate_logits = self.modality_gate(projected_features).squeeze(-1)
         active_mask = modality_mask > 0
-        gate_floor = torch.finfo(gate_logits.dtype).min
-        gate_logits = gate_logits.masked_fill(~active_mask, gate_floor)
-        attention = torch.softmax(gate_logits, dim=1)
-        attention = attention * active_mask.to(dtype=attention.dtype)
+        if self.disable_modality_gate:
+            attention = active_mask.to(dtype=projected_features.dtype)
+        else:
+            gate_logits = self.modality_gate(projected_features).squeeze(-1)
+            gate_floor = torch.finfo(gate_logits.dtype).min
+            gate_logits = gate_logits.masked_fill(~active_mask, gate_floor)
+            attention = torch.softmax(gate_logits, dim=1)
+            attention = attention * active_mask.to(dtype=attention.dtype)
         attention = attention / attention.sum(dim=1, keepdim=True).clamp_min(1e-12)
         fused_feature = torch.sum(projected_features * attention.unsqueeze(-1), dim=1)
         fused_feature = self.dropout(fused_feature)
@@ -407,6 +412,7 @@ def build_client_model(
     dropout=0.0,
     model_mode="auto",
     algo=None,
+    mfg_disable_modality_gate=False,
 ):
     resolved_mode = resolve_model_mode(model_mode, algo)
     model_classes = {
@@ -421,12 +427,15 @@ def build_client_model(
             f"Expected one of {sorted(model_classes)}."
         )
     model_cls = model_classes[resolved_mode]
-    model = model_cls(
-        client_name=client_name,
-        num_classes=num_classes,
-        model_name=model_name,
-        prototype_dim=prototype_dim,
-        dropout=dropout,
-    )
+    model_kwargs = {
+        "client_name": client_name,
+        "num_classes": num_classes,
+        "model_name": model_name,
+        "prototype_dim": prototype_dim,
+        "dropout": dropout,
+    }
+    if model_cls is MFGModel:
+        model_kwargs["disable_modality_gate"] = mfg_disable_modality_gate
+    model = model_cls(**model_kwargs)
     model.model_mode = resolved_mode
     return model

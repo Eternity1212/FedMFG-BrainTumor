@@ -4,3 +4,6 @@ numpy
 scikit-learn
 matplotlib
 tqdm
+h5py
+datasets
+pillow

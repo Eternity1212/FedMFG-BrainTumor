@@ -14,6 +14,7 @@ class ClientFedMFG(Client):
         super().__init__(args, client_name, **kwargs)
         self.mfg_proto_lambda = float(getattr(args, "mfg_proto_lambda"))
         self.mfg_head_lambda = float(getattr(args, "mfg_head_lambda"))
+        self.mfg_disable_combo_prototype = bool(getattr(args, "mfg_disable_combo_prototype", False))
         self.teacher_prototypes = {}
         self.local_combo_prototypes = {}
         self.local_combo_counts = {}
@@ -177,6 +178,11 @@ class ClientFedMFG(Client):
         return self.loss_fn(logits, target)
 
     def collect_local_prototypes(self):
+        if self.mfg_disable_combo_prototype:
+            self.local_combo_prototypes = {}
+            self.local_combo_counts = {}
+            return self.local_combo_prototypes
+
         trainloader = self.load_train_data(shuffle=False)
         self.model.eval()
         grouped_sums = {}
@@ -212,6 +218,15 @@ class ClientFedMFG(Client):
         return self.local_combo_prototypes
 
     def get_upload_payload(self):
+        if self.mfg_disable_combo_prototype:
+            return {
+                "combo_prototypes": {},
+                "combo_counts": {},
+                "classifier_state": {
+                    key: value.detach().cpu().clone()
+                    for key, value in self.get_classifier_state().items()
+                },
+            }
         return {
             "combo_prototypes": {
                 key: prototype.detach().cpu().clone()
@@ -249,7 +264,10 @@ class ClientFedMFG(Client):
                         modality_mask = outputs["modality_mask"]
 
                         cls_loss = self.loss_fn(logits, y)
-                        batch_prototypes = self._batch_prototypes(fused_feature, modality_mask, y)
+                        if self.mfg_disable_combo_prototype:
+                            batch_prototypes = {}
+                        else:
+                            batch_prototypes = self._batch_prototypes(fused_feature, modality_mask, y)
                         proto_loss = self._prototype_alignment_loss(batch_prototypes)
                         head_loss = self._head_calibration_loss(batch_prototypes)
                         loss = cls_loss + self.mfg_proto_lambda * proto_loss + self.mfg_head_lambda * head_loss

@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.pycache_check/
 
 # Virtual environments
 .venv/
@@ -32,6 +33,7 @@ Graduation-Design-main/plots/
 *.tmp
 wandb/
 runs/
+paper_outputs/
 
 # Literature PDFs are kept locally; commit the literature index instead.
 文献资料/*.pdf

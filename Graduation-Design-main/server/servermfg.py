@@ -19,6 +19,8 @@ class ServerFedMFG(Server):
         self.mfg_head_tau = float(getattr(args, "mfg_head_tau"))
         self.mfg_head_beta = float(getattr(args, "mfg_head_beta"))
         self.mfg_head_weight_mode = str(getattr(args, "mfg_head_weight_mode"))
+        self.mfg_disable_teacher = bool(getattr(args, "mfg_disable_teacher", False))
+        self.mfg_disable_combo_prototype = bool(getattr(args, "mfg_disable_combo_prototype", False))
 
         self.global_combo_prototypes = {}
         self.set_clients(ClientFedMFG)
@@ -40,13 +42,16 @@ class ServerFedMFG(Server):
             self.global_classifier_state = state_dict_to_cpu(classifier_state)
 
     def get_client_payload(self):
-        return {
-            "classifier_state": self.global_classifier_state,
-            "teacher_prototypes": build_teacher_prototypes(
+        teacher_prototypes = {}
+        if not self.mfg_disable_teacher and not self.mfg_disable_combo_prototype:
+            teacher_prototypes = build_teacher_prototypes(
                 self.global_combo_prototypes,
                 teacher_lambda=self.mfg_teacher_lambda,
                 teacher_tau=self.mfg_teacher_tau,
-            ),
+            )
+        return {
+            "classifier_state": self.global_classifier_state,
+            "teacher_prototypes": teacher_prototypes,
         }
 
     def send_parameters(self):
@@ -59,12 +64,15 @@ class ServerFedMFG(Server):
             client.client_name: client.get_upload_payload()
             for client in active_clients
         }
-        self.global_combo_prototypes = aggregate_combo_prototypes(
-            payloads=payloads,
-            previous_global=self.global_combo_prototypes,
-            momentum=self.mfg_proto_momentum,
-            proto_tau=self.mfg_proto_tau,
-        )
+        if self.mfg_disable_combo_prototype:
+            self.global_combo_prototypes = {}
+        else:
+            self.global_combo_prototypes = aggregate_combo_prototypes(
+                payloads=payloads,
+                previous_global=self.global_combo_prototypes,
+                momentum=self.mfg_proto_momentum,
+                proto_tau=self.mfg_proto_tau,
+            )
         self.global_classifier_state = aggregate_classifier_rows(
             payloads=payloads,
             current_global_state=self.global_classifier_state,
@@ -273,6 +281,10 @@ def aggregate_classifier_rows(
     for payload in payloads.values():
         classifier_state = payload.get("classifier_state")
         if classifier_state is None:
+            continue
+        if head_weight_mode == "uniform":
+            client_weights.append(1.0)
+            client_states.append(state_dict_to_cpu(classifier_state))
             continue
         total_count, rho, eta = _client_stats(
             payload=payload,
