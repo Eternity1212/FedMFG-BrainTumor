@@ -25,7 +25,7 @@ COMMON_ARGS=(
   --global_rounds "${ROUNDS}"
   --eval_gap 1
   --local_epochs 1
-  --local_learning_rate 1e-3
+  --local_learning_rate 3e-4
   --batch_size 16
   --client_batch_size_map BraTS=2 Shanghai=4 Figshare=32 Brisc2025=32
   --val_ratio 0.1
