@@ -9,7 +9,7 @@
 | Figshare | 已完成 | `data/processed/Figshare` | Hugging Face 镜像，train=2522, test=542 |
 | BraTS | 未找到 | `data/processed/BraTS` | 当前机器没有原实验数据；需要官方授权或提供已预处理数据 |
 | Shanghai | 未找到 | `data/processed/Shanghai` | 当前机器没有原实验数据；可能是私有数据 |
-| Brisc2025 | 原始数据未找到；公开替代数据已部分生成 | `data/processed/Brisc2025` | 当前已有 `Simezu/brain-tumour-MRI-scan` 生成的 300 个 `no_tumor` 样本，仅用于链路验证 |
+| Brisc2025 | 已找到正式公开源；待下载预处理 | `data/processed/Brisc2025` | Zenodo DOI `10.5281/zenodo.17524350`，已新增下载和预处理脚本；当前本地仍是 `Simezu` 部分样本，仅用于链路验证 |
 | Yale | 未找到 | `data/processed/Yale` | 可作为外部验证客户端，当前无数据 |
 
 ## 已完成工程验证
@@ -84,6 +84,12 @@ Client/
 - 使用 Figshare + 其他公开 2D 脑肿瘤分类数据构造多个 2D 客户端。
 - 明确论文中写作“公开数据模拟异构联邦场景”，而不是声称真实多医院私有数据。
 - `Simezu/brain-tumour-MRI-scan` 可作为公开 2D 替代数据，但 Hugging Face 单文件流式下载较慢；正式实验建议改用 Kaggle/Zenodo/Figshare 压缩包离线下载后预处理。
+
+4. 已确认可优先下载的数据：
+
+- `BRISC2025`: Zenodo `https://doi.org/10.5281/zenodo.17524350`，约 260MB，CC BY 4.0。
+- `UPENN-GBM/UCSF-PDGM/UTSW-Glioma`: TCIA 公开 3D 多模态 glioma 数据，可替代 `Shanghai` 或补充 3D 客户端。
+- `Pretreat-MetsToBrain-Masks/Yale-Brain-Mets-Longitudinal`: TCIA 公开脑转移瘤数据，可用于外部验证或 `brain_metastases` 类。
 
 ## 当前论文风险
 

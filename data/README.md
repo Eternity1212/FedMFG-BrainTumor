@@ -53,6 +53,15 @@ np.savez_compressed("t1c.npz", x=image_array.astype("float32"))
 
 注意：这类数据不建议直接脚本匿名下载，优先走官方授权流程。
 
+可用路线：
+
+- BraTS 2021: https://www.synapse.org/Synapse:syn25829067
+- TCIA BraTS 2021 页面: https://www.cancerimagingarchive.net/analysis-result/rsna-asnr-miccai-brats-2021/
+- FeTS Challenge data: https://fets-ai.github.io/Challenge/data/
+- FeTS Synapse challenge: https://www.synapse.org/Synapse:syn54079892/wiki/626854
+
+投稿优先级：如果能完成 Synapse/TCIA 授权，优先使用 FeTS/BraTS，因为它提供 T1、T1c、T2、FLAIR 四模态，并且 FeTS 有机构划分，最贴合联邦学习设定。
+
 ### 2. Figshare Brain Tumor Dataset
 
 用途：2D T1-CE 脑肿瘤分类客户端。
@@ -81,11 +90,25 @@ np.savez_compressed("t1c.npz", x=image_array.astype("float32"))
 
 注意：需要确认具体数据来源、类别定义和许可证，避免把不同任务标签混用。`Simezu/brain-tumour-MRI-scan` 是 Figshare、SARTAJ、Br35H 的组合公开集，适合先做公开可复现实验；如果拿到正式 BRISC2025 原始包，应优先替换成正式 BRISC2025。
 
+当前优先级：正式 `BRISC2025` 已确认可从 Zenodo 直接下载 `brisc2025.zip`，大小约 260MB，许可证为 CC BY 4.0，适合直接作为 `Brisc2025` 客户端。
+
 ### 4. Shanghai / Yale 私有或半公开数据
 
 用途：作为双模态或外部验证客户端。
 
 注意：如果涉及私有医学数据，论文中必须说明伦理审批、脱敏方式、数据不可公开原因。
+
+当前检索结论：
+
+- `Shanghai` 暂未找到与项目中 `T1c + FLAIR` 双模态脑肿瘤分类客户端完全对应的公开下载源，较可能是原实验私有/半私有医院数据。
+- `Yale-Brain-Mets-Longitudinal` 已确认公开存在，包含 T1、T1CE、T2、FLAIR NIfTI，可作为 `brain_metastases` 或外部验证客户端，但体量约 43GB，下载和预处理成本较高。
+
+可替代公开 3D 多模态来源：
+
+- UPENN-GBM: https://www.cancerimagingarchive.net/collection/upenn-gbm/
+- UCSF-PDGM: https://www.cancerimagingarchive.net/collection/ucsf-pdgm/
+- UTSW-Glioma: https://www.cancerimagingarchive.net/collection/utsw-glioma/
+- Pretreat-MetsToBrain-Masks: https://www.cancerimagingarchive.net/collection/pretreat-metstobrain-masks/
 
 ## 已提供脚本
 
@@ -110,6 +133,25 @@ python data/scripts/preprocess_figshare_hf.py \
 ```
 
 该镜像已提供 patient-level 的 train/test 划分，适合快速补充 2D 分类客户端。
+
+### BRISC2025 Zenodo 正式版
+
+下载：
+
+```bash
+bash data/scripts/download_brisc2025_zenodo.sh
+```
+
+预处理：
+
+```bash
+python data/scripts/preprocess_brisc2025.py \
+  --zip_path data/raw/brisc2025/brisc2025.zip \
+  --output_dir data/processed/Brisc2025 \
+  --overwrite
+```
+
+该数据包含 `glioma/meningioma/pituitary/no_tumor` 四类，保存为 `t1.npz`，最适合替换当前只用于链路验证的 `Simezu` 部分数据。
 
 ### Simezu Hugging Face 公开组合数据
 
