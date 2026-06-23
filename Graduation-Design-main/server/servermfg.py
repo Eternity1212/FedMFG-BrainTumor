@@ -81,6 +81,8 @@ class ServerFedMFG(Server):
             head_tau=self.mfg_head_tau,
             head_beta=self.mfg_head_beta,
             head_weight_mode=self.mfg_head_weight_mode,
+            head_eps=self.mfg_head_eps,
+            head_gamma=self.mfg_head_gamma,
         )
         return {
             "global_combo_prototypes": self.global_combo_prototypes,
@@ -272,9 +274,13 @@ def aggregate_classifier_rows(
     head_tau,
     head_beta,
     head_weight_mode,
+    head_eps=1e-6,
+    head_gamma=1.0,
 ):
     aggregated_state = state_dict_to_cpu(current_global_state)
     tau = max(float(head_tau), 1e-12)
+    eps = max(float(head_eps), 0.0)
+    gamma = float(head_gamma)
     client_weights = []
     client_states = []
 
@@ -294,8 +300,16 @@ def aggregate_classifier_rows(
         if total_count <= 0:
             continue
         reliability = math.exp(rho / tau)
-        if head_weight_mode == "rho_eta":
+        if head_weight_mode in ("rho_eta", "count_rho_eta"):
             reliability *= (1.0 + head_beta * eta)
+        # ``count_rho_eta`` (default) makes head aggregation data-size aware so
+        # that large, well-populated clients dominate the shared head while the
+        # prototype-consistency/modality-completeness terms only modulate on top.
+        # This restores the intended use of ``mfg_head_gamma`` / ``mfg_head_eps``
+        # and fixes the count-blind weighting that let tiny, noisy clients
+        # distort the global classifier.
+        if head_weight_mode == "count_rho_eta":
+            reliability *= (total_count + eps) ** gamma
         client_weights.append(reliability)
         client_states.append(state_dict_to_cpu(classifier_state))
 

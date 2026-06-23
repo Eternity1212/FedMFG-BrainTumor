@@ -176,9 +176,9 @@ def build_arg_parser():
                         help="[FedMFG] Temperature for prototype-consistency weighting in head aggregation")
     parser.add_argument("--mfg_head_beta",        type=float, default=1.0,
                         help="[FedMFG] Strength of modality-completeness weighting in head aggregation")
-    parser.add_argument("--mfg_head_weight_mode", type=str, default="rho_eta",
-                        choices=["uniform", "rho", "rho_eta"],
-                        help="[FedMFG] Unified classifier-head aggregation weight: prototype consistency only, or prototype consistency plus modality completeness")
+    parser.add_argument("--mfg_head_weight_mode", type=str, default="count_rho_eta",
+                        choices=["uniform", "rho", "rho_eta", "count_rho_eta"],
+                        help="[FedMFG] Unified classifier-head aggregation weight: 'uniform' (mean), 'rho' (prototype consistency only), 'rho_eta' (consistency + modality completeness), 'count_rho_eta' (data-size aware consistency + completeness, default)")
     parser.add_argument("--mfg_disable_teacher", action="store_true",
                         help="[FedMFG ablation] Disable teacher prototypes sent from the server")
     parser.add_argument("--mfg_disable_combo_prototype", action="store_true",

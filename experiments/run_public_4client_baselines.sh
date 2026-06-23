@@ -64,18 +64,25 @@ run_algo() {
 # Fault tolerant: a single algorithm failure logs a warning but does not abort
 # the whole (potentially multi-hour, multi-seed) suite.
 for algo in ${ALGOS}; do
+  # Standard FL baselines (local/fedgh/fedproto/fedtgp) use the single-encoder
+  # "baseline" model (modalities stacked as input channels => fixed 512-d
+  # feature for every client). Forcing --model_mode multimodal on them yields
+  # an AMM model whose feature dim = backbone_dim * #modalities (2048 for the
+  # 4-modality BraTS client vs 512 elsewhere), which breaks cross-client
+  # prototype / global-head aggregation. The modality-aware methods
+  # (fedmm/fedamm/fedmfg) keep multimodal from COMMON_ARGS.
   case "${algo}" in
     local)
-      run_algo local || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
+      run_algo local --model_mode auto || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
       ;;
     fedgh)
-      run_algo fedgh || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
+      run_algo fedgh --model_mode auto || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
       ;;
     fedproto)
-      run_algo fedproto --proto_lambda 1.0 || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
+      run_algo fedproto --model_mode auto --proto_lambda 1.0 || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
       ;;
     fedtgp)
-      run_algo fedtgp --proto_lambda 1.0 --server_epochs 3 || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
+      run_algo fedtgp --model_mode auto --proto_lambda 1.0 --server_epochs 3 || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
       ;;
     fedmm)
       run_algo fedmm || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
@@ -93,7 +100,8 @@ for algo in ${ALGOS}; do
         --mfg_teacher_tau 1.0 \
         --mfg_head_tau 1.0 \
         --mfg_head_beta 1.0 \
-        --mfg_head_weight_mode rho || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
+        --mfg_head_gamma 1.0 \
+        --mfg_head_weight_mode count_rho_eta || echo "[WARN] ${algo} (seed ${SEED}) failed" >&2
       ;;
     *)
       echo "Unknown algorithm in ALGOS: ${algo}" >&2

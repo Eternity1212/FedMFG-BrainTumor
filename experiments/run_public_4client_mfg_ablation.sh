@@ -43,7 +43,8 @@ COMMON_ARGS=(
   --mfg_teacher_tau 1.0
   --mfg_head_tau 1.0
   --mfg_head_beta 1.0
-  --mfg_head_weight_mode rho
+  --mfg_head_gamma 1.0
+  --mfg_head_weight_mode count_rho_eta
   --server_early_stopping_patience 5
   --server_early_stopping_min_delta 0.0
   --num_workers 0
@@ -68,6 +69,7 @@ run_variant no_teacher --mfg_disable_teacher || echo "[WARN] ablation no_teacher
 run_variant no_proto_loss --mfg_proto_lambda 0 || echo "[WARN] ablation no_proto_loss failed" >&2
 run_variant no_head_calibration --mfg_head_lambda 0 || echo "[WARN] ablation no_head_calibration failed" >&2
 run_variant uniform_head --mfg_head_weight_mode uniform || echo "[WARN] ablation uniform_head failed" >&2
+run_variant count_blind_head --mfg_head_weight_mode rho_eta || echo "[WARN] ablation count_blind_head failed" >&2
 
 "${PYTHON_BIN}" "${ROOT_DIR}/paper_tools/summarize_histories.py" \
   --history_dir "${OUTPUT_DIR}/histories" \
