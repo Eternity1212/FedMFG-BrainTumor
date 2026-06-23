@@ -15,6 +15,29 @@
 
 本项目提出 `FedMFG`，目标是在这种不整齐的数据环境中完成联邦脑肿瘤分类。
 
+## GPU 一键复现（推荐）
+
+在带 GPU 的 Linux 机器上，克隆仓库后一条命令完成「装环境 → 下数据 → 全分辨率预处理 → 跑全量主实验+消融 → 汇总并自检结果」：
+
+```bash
+git clone https://github.com/Eternity1212/FedMFG-BrainTumor.git
+cd FedMFG-BrainTumor
+bash run.sh                      # 默认 seeds=42 43 44, rounds=16, 全分辨率, AMP, lr=1e-3
+```
+
+常用配置（按需覆盖）：
+
+```bash
+# 指定 CUDA 版 torch 源（按服务器 CUDA 版本）
+TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121 bash run.sh
+# 显存紧张时调小 batch / 分辨率 / case 数
+CBS_MAP="BraTS=2 Shanghai=4 Figshare=32 Brisc2025=32" bash run.sh
+# 只重跑某些阶段（1=执行 0=跳过）：env/data/train/ablation/report
+DO_ENV=0 DO_DATA=0 bash run.sh
+```
+
+结果位置：`paper_outputs/gpu_fullres/`（逐 seed 与多 seed 汇总 CSV、逐轮 history）、`paper/results/gpu_main_report.csv` 与 `gpu_ablation_report.csv`（**样本加权 + 客户端宏平均/Macro-F1 双口径，并自动判定最优方法**）。详细步骤见 `experiments/README_GPU.md`。
+
 ## 核心创新点
 
 `FedMFG` 的全称是 `Federated Modality-aware Fusion and prototype-Guided head aggregation`。
