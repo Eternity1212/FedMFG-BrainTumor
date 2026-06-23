@@ -25,16 +25,26 @@ cd FedMFG-BrainTumor
 bash run.sh                      # 默认 seeds=42 43 44, rounds=16, 全分辨率, AMP, lr=1e-3
 ```
 
+脚本默认**不使用 venv/conda**，自动探测 `python3`（拒绝 Python 2），用 `pip install --user` 安装；已安装的包会自动跳过（不会覆盖你 GPU 机器上已配好的 torch）。
+
 常用配置（按需覆盖）：
 
 ```bash
 # 指定 CUDA 版 torch 源（按服务器 CUDA 版本）
 TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121 bash run.sh
+# 指定 python3（机器默认 python 是 2.7 时）
+PYTHON=/usr/bin/python3 bash run.sh
+# 内网默认 pip 源缺 monai/huggingface_hub 时，换一个能装到的源
+PIP_INDEX_URL=https://pypi.org/simple bash run.sh
+# 已经手动装好环境，只跑数据+实验
+DO_ENV=0 bash run.sh
 # 显存紧张时调小 batch / 分辨率 / case 数
 CBS_MAP="BraTS=2 Shanghai=4 Figshare=32 Brisc2025=32" bash run.sh
 # 只重跑某些阶段（1=执行 0=跳过）：env/data/train/ablation/report
 DO_ENV=0 DO_DATA=0 bash run.sh
 ```
+
+> 依赖说明：`monai`（3D ResNet 必需）、`datasets`/`huggingface_hub`（数据下载）、`nibabel`（3D 预处理）是关键包。若某些包在你的 pip 源装不上，`run.sh` 会在 STAGE 1 末尾列出缺失项并给出手动安装命令，不会静默失败。
 
 结果位置：`paper_outputs/gpu_fullres/`（逐 seed 与多 seed 汇总 CSV、逐轮 history）、`paper/results/gpu_main_report.csv` 与 `gpu_ablation_report.csv`（**样本加权 + 客户端宏平均/Macro-F1 双口径，并自动判定最优方法**）。详细步骤见 `experiments/README_GPU.md`。
 

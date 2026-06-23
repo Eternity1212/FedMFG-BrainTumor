@@ -29,12 +29,32 @@ DO_TRAIN="${DO_TRAIN:-1}"
 DO_ABLATION="${DO_ABLATION:-1}"
 DO_REPORT="${DO_REPORT:-1}"
 
-# 环境
-USE_VENV="${USE_VENV:-1}"
+# 环境（默认不使用 venv/conda，直接用 python3 + pip 安装到 --user）
+USE_VENV="${USE_VENV:-0}"
 VENV_DIR="${VENV_DIR:-${ROOT_DIR}/.venv}"
-PYTHON_BIN="${PYTHON:-python3}"
-# 按你的 CUDA 版本设置；留空则用默认 pip 源（Linux 上通常自带 CUDA 轮子）
+PYTHON_BIN="${PYTHON:-}"          # 留空则自动探测可用的 python3
+PIP_USER="${PIP_USER:-1}"         # 1=pip install --user（无 sudo 写权限时需要）
+# 可选 pip 镜像（内网默认镜像若缺 monai/huggingface_hub，可指向能装到这些包的源）
+PIP_INDEX_URL="${PIP_INDEX_URL:-}"
+PIP_EXTRA_INDEX_URL="${PIP_EXTRA_INDEX_URL:-}"
+# 按你的 CUDA 版本设置；留空则用默认 pip 源
 TORCH_INDEX_URL="${TORCH_INDEX_URL:-}"
+
+# ---- 自动探测一个可用的 python3（拒绝 Python 2）----
+detect_python() {
+  if [[ -n "${PYTHON_BIN}" ]]; then return; fi
+  local cand
+  for cand in python3.11 python3.10 python3.9 python3.8 python3 python; do
+    if command -v "${cand}" >/dev/null 2>&1; then
+      if "${cand}" -c 'import sys; sys.exit(0 if sys.version_info[0]>=3 else 1)' 2>/dev/null; then
+        PYTHON_BIN="${cand}"; return
+      fi
+    fi
+  done
+  echo "[run.sh][FATAL] 找不到 Python 3。当前 python/pip 可能是 Python 2.7，请安装 python3 或用 PYTHON=/path/to/python3 指定。" >&2
+  exit 1
+}
+detect_python
 
 # 实验
 DEVICE="${DEVICE:-cuda}"
@@ -77,33 +97,95 @@ EOF
 ###############################################################################
 # STAGE 1: 环境
 ###############################################################################
+# pip 安装封装：尊重 --user / 自定义镜像
+pip_install() {
+  local args=(-m pip install)
+  [[ "${PIP_USER}" == "1" ]] && args+=(--user)
+  [[ -n "${PIP_INDEX_URL}" ]] && args+=(--index-url "${PIP_INDEX_URL}")
+  [[ -n "${PIP_EXTRA_INDEX_URL}" ]] && args+=(--extra-index-url "${PIP_EXTRA_INDEX_URL}")
+  "${PYTHON_BIN}" "${args[@]}" "$@"
+}
+
+# 已能 import 就跳过；否则尝试安装（失败不终止，记录到 MISSING_PKGS）
+MISSING_PKGS=()
+ensure_pkg() {
+  local import_name="$1"; shift
+  local pip_name="${1:-$import_name}"; shift || true
+  if "${PYTHON_BIN}" -c "import ${import_name}" >/dev/null 2>&1; then
+    echo "  [ok] ${import_name} 已安装"
+    return 0
+  fi
+  echo "  [..] 安装 ${pip_name} ..."
+  if pip_install "${pip_name}" "$@" >/dev/null 2>&1 \
+       && "${PYTHON_BIN}" -c "import ${import_name}" >/dev/null 2>&1; then
+    echo "  [ok] ${pip_name} 安装成功"
+  else
+    echo "  [!!] ${pip_name} 安装失败（当前 pip 源可能没有该包）"
+    MISSING_PKGS+=("${pip_name}")
+  fi
+}
+
 setup_env() {
-  log "STAGE 1: 安装环境"
+  log "STAGE 1: 安装环境（python=${PYTHON_BIN}，venv=${USE_VENV}，pip --user=${PIP_USER}）"
+  "${PYTHON_BIN}" -c 'import sys; print("  Python:", sys.version.split()[0], sys.executable)'
+
   if [[ "${USE_VENV}" == "1" ]]; then
     if [[ ! -d "${VENV_DIR}" ]]; then
-      "${PYTHON_BIN}" -m venv "${VENV_DIR}"
+      "${PYTHON_BIN}" -m venv "${VENV_DIR}" || {
+        echo "[run.sh][WARN] venv 创建失败（缺 python3-venv），改为直接用 ${PYTHON_BIN} + pip" >&2
+        USE_VENV=0
+      }
     fi
-    # shellcheck disable=SC1091
-    source "${VENV_DIR}/bin/activate"
-    PYTHON_BIN="python"
+    if [[ "${USE_VENV}" == "1" ]]; then
+      # shellcheck disable=SC1091
+      source "${VENV_DIR}/bin/activate"; PYTHON_BIN="python"; PIP_USER=0
+    fi
   fi
-  "${PYTHON_BIN}" -m pip install --upgrade pip
-  if [[ -n "${TORCH_INDEX_URL}" ]]; then
-    "${PYTHON_BIN}" -m pip install torch --index-url "${TORCH_INDEX_URL}"
+
+  # torch：已装则跳过（GPU 机器通常已自带匹配 CUDA 的 torch，切勿乱覆盖）
+  if "${PYTHON_BIN}" -c 'import torch' >/dev/null 2>&1; then
+    echo "  [ok] torch 已安装，跳过（避免覆盖 GPU 版）"
   else
-    "${PYTHON_BIN}" -m pip install torch
+    echo "  [..] 安装 torch ..."
+    if [[ -n "${TORCH_INDEX_URL}" ]]; then
+      pip_install torch --index-url "${TORCH_INDEX_URL}" || MISSING_PKGS+=("torch")
+    else
+      pip_install torch || MISSING_PKGS+=("torch")
+    fi
   fi
-  "${PYTHON_BIN}" -m pip install -r "${ROOT_DIR}/Graduation-Design-main/requirements.txt"
-  "${PYTHON_BIN}" -m pip install nibabel huggingface_hub
+
+  ensure_pkg numpy numpy
+  ensure_pkg sklearn scikit-learn
+  ensure_pkg matplotlib matplotlib
+  ensure_pkg tqdm tqdm
+  ensure_pkg h5py h5py
+  ensure_pkg PIL pillow
+  ensure_pkg monai monai            # 3D ResNet 必需（model.py 依赖）
+  ensure_pkg datasets datasets      # 数据下载（HF）
+  ensure_pkg huggingface_hub huggingface_hub
+  ensure_pkg nibabel nibabel        # 3D NIfTI 预处理
+
   log "GPU 检测"
   "${PYTHON_BIN}" - <<'PY'
-import torch
-print("torch:", torch.__version__, "| CUDA available:", torch.cuda.is_available())
-if torch.cuda.is_available():
-    print("GPU:", torch.cuda.get_device_name(0))
-else:
-    print("警告：未检测到 CUDA GPU。可设置 DEVICE=cpu，但会非常慢。")
+try:
+    import torch
+    print("torch:", torch.__version__, "| CUDA available:", torch.cuda.is_available())
+    if torch.cuda.is_available():
+        print("GPU:", torch.cuda.get_device_name(0))
+    else:
+        print("WARNING: no CUDA GPU detected. Set DEVICE=cpu (very slow).")
+except Exception as e:
+    print("WARNING: cannot import torch:", e)
 PY
+
+  if [[ ${#MISSING_PKGS[@]} -gt 0 ]]; then
+    log "STAGE 1 完成，但以下包未装上（请用可用 pip 源手动安装后重跑，或设置 PIP_INDEX_URL）"
+    printf '  - %s\n' "${MISSING_PKGS[@]}"
+    echo "  例如: ${PYTHON_BIN} -m pip install --user ${MISSING_PKGS[*]}"
+    echo "  关键依赖 torch/monai 缺失会导致训练无法进行。"
+  else
+    log "STAGE 1 完成：依赖齐全"
+  fi
 }
 
 ###############################################################################
@@ -252,8 +334,11 @@ EOF
 ###############################################################################
 print_config
 [[ "${DO_ENV}"      == "1" ]] && setup_env      || log "跳过 STAGE 1 (环境)"
-# venv 激活需在后续阶段保持；若 DO_ENV=0 但要用 venv，手动 source 后再跑
-[[ "${USE_VENV}" == "1" && -d "${VENV_DIR}" ]] && { source "${VENV_DIR}/bin/activate"; PYTHON_BIN="python"; }
+# venv 激活需在后续阶段保持；仅当确实启用且 activate 存在时才激活
+if [[ "${USE_VENV}" == "1" && -f "${VENV_DIR}/bin/activate" ]]; then
+  # shellcheck disable=SC1091
+  source "${VENV_DIR}/bin/activate"; PYTHON_BIN="python"
+fi
 [[ "${DO_DATA}"     == "1" ]] && prepare_data   || log "跳过 STAGE 2 (数据)"
 [[ "${DO_TRAIN}"    == "1" ]] && run_training   || log "跳过 STAGE 3 (主实验)"
 [[ "${DO_ABLATION}" == "1" ]] && run_ablation   || log "跳过 STAGE 4 (消融)"
