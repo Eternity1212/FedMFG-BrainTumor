@@ -75,6 +75,42 @@
 2. 下一轮迭代必须扩大 3D 客户端规模：从 HF BraTS2023（GLI+MEN，每库上千 case）多取样本，目标每个 3D 客户端 train≥120 / test≥40，类别保持平衡；分辨率维持 32×112×112 / 16×112×112 以兼顾 CPU 时间。
 3. 扩样后重跑 4 客户端多 seed baseline + FedMFG 消融，确保 3D 端有真实可学习信号，再据此判断 FedMFG 是否占优。
 
+## 首轮完整套件结果（2026-06-23，10 轮，lr=3e-4，seed 42/43/44）
+
+多 seed baseline（Test Acc %，均值±std）：
+
+| 算法 | Test Acc | Macro-F1 | BraTS | Shanghai | Figshare | Brisc2025 |
+| --- | --- | --- | --- | --- | --- | --- |
+| local | 71.40±6.59 | 70.48±7.14 | 61.1 | 50.0 | 80.1 | 66.0 |
+| fedproto | 解析失败（history 缺 test 字段，需重跑） | | | | | |
+| fedamm | 79.11±0.14 | 78.53±0.40 | 83.3 | 52.8 | 78.3 | 80.5 |
+| **fedmfg** | **79.51±0.63** | **78.99±0.41** | 80.6 | 55.6 | 78.2 | 81.4 |
+| fedmm | **82.13±0.53** | 81.84±0.60 | 77.8 | 66.7 | 79.9 | 84.6 |
+
+消融（seed42，单种子）：
+
+| 变体 | Test Acc | 结论 |
+| --- | --- | --- |
+| full | 80.31 | 基准 |
+| uniform_head | **81.34** | 比 full 高 → 头部加权聚合**反而有害** |
+| no_teacher | 80.31 | 与 full 相同 → teacher prototype **无增益** |
+| no_modality_gate | 79.79 | 模态门控增益很小 |
+| no_combo_prototype | 76.71 | 组合原型有效（-3.6） |
+| no_head_calibration | 73.29 | 头部校准有效（-7.0） |
+| no_proto_loss | 69.52 | 原型对齐损失有效（-10.8） |
+
+**诚实结论（结果不达标，需迭代）**：
+1. **FedMFG 没有占优**：fedmm（82.1）> fedmfg（79.5）≈ fedamm（79.1）。提出方法目前不是最好，论文不能这样写。
+2. **两个组件帮倒忙/无效**：`uniform_head` 优于 `full`（头部加权聚合有害）；`no_teacher` 等于 `full`（teacher 原型无用）。有效的是 proto_loss / head_calibration / combo_prototype。
+3. **3D 客户端仍是随机水平**：BraTS/Shanghai test n=4，方差极大（±6~12），不可信。
+4. **两个 baseline 崩了**：fedgh/fedtgp 因异构标签空间导致全局头维度不匹配（512 vs 2048）报错；fedproto history 缺 test 字段未能汇总。
+
+**下一轮迭代计划（按优先级）**：
+1. 扩大 3D 客户端（每端 train≥120/test≥40），消除随机水平、缩小方差——这是 3D 故事可信的前提。
+2. 改进 FedMFG：移除/修复有害的头部加权聚合与无效 teacher 分支，调权重，使其真正领先。
+3. 修复 fedgh/fedtgp（按客户端标签空间对齐全局头维度）与 fedproto 的 test 记录，补全 baseline 表。
+4. 扩样 + 改进后重跑多 seed，确认 FedMFG 占优后再定稿。
+
 ## 消融实验状态
 
 | 消融变体 | 脚本支持 | 正式结果 |
