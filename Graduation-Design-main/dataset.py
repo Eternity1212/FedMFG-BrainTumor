@@ -144,9 +144,18 @@ class BrainTumorCaseDataset(Dataset):
         for label_name in sorted(os.listdir(self.client_dir)):
             label_dir = os.path.join(self.client_dir, label_name)
 
+            # Skip OS/Finder artifacts and any non-directory or unknown entries
+            # (e.g. macOS ".DS_Store") so a stray file never breaks loading.
+            if label_name.startswith(".") or not os.path.isdir(label_dir):
+                continue
+            if label_name not in GLOBAL_LABEL_MAP:
+                continue
+
             label_id = GLOBAL_LABEL_MAP[label_name]
             for sample_name in sorted(os.listdir(label_dir)):
                 sample_dir = os.path.join(label_dir, sample_name)
+                if sample_name.startswith(".") or not os.path.isdir(sample_dir):
+                    continue
                 modality_paths = {}
                 for modality in self.expected_modalities:
                     modality_path = os.path.join(sample_dir, modality + ".npz")
