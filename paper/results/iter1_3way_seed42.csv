@@ -1,0 +1,4 @@
+algo,num_seeds,seeds,test_acc_mean,test_acc_std,test_f1_mean,test_f1_std,BraTS_acc_mean,BraTS_acc_std,Shanghai_acc_mean,Shanghai_acc_std,Figshare_acc_mean,Figshare_acc_std,Brisc2025_acc_mean,Brisc2025_acc_std
+fedamm,1,42,0.778125,0.0,0.7680246417580194,0.0,0.6,0.0,0.7,0.0,0.7916666666666666,0.0,0.8,0.0
+fedmfg,1,42,0.740625,0.0,0.733063089870916,0.0,0.725,0.0,0.775,0.0,0.7083333333333334,0.0,0.7625,0.0
+fedmm,1,42,0.78125,0.0,0.7743542145013521,0.0,0.5,0.0,0.775,0.0,0.7958333333333333,0.0,0.80625,0.0
