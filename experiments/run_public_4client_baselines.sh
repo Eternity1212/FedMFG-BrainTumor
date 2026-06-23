@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CODE_DIR="${ROOT_DIR}/Graduation-Design-main"
 DATA_DIR="${1:-${ROOT_DIR}/data/processed}"
-OUTPUT_DIR="${ROOT_DIR}/paper_outputs/public_4client"
+OUTPUT_DIR="${OUTPUT_DIR:-${ROOT_DIR}/paper_outputs/public_4client}"
 PYTHON_BIN="${PYTHON:-python3}"
 # MAX_SAMPLES caps samples per client per split. Because samples are grouped by
 # label, a small cap biases toward the first classes; leave it as 0 (disabled)

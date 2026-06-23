@@ -7,8 +7,8 @@
 | 数据/客户端 | 状态 | 本地路径 | 说明 |
 | --- | --- | --- | --- |
 | Figshare | 已完成（128×128） | `data/processed/Figshare` | Hugging Face 镜像，2D t1c，train=2522, test=542，3 类 |
-| BraTS | 已用公开数据替代完成 | `data/processed/BraTS` | BraTS2023 GLI(glioma)+MEN(meningioma)，3D 四模态 32×112×112，train=36, test=12，2 类 |
-| Shanghai | 已用公开数据替代完成 | `data/processed/Shanghai` | 同源 BraTS2023 抽取 t1c+t2f 模拟双模态 3D 客户端 16×112×112，train=36, test=12，2 类 |
+| BraTS | 已扩样完成 | `data/processed/BraTS` | BraTS2023 GLI(glioma)+MEN(meningioma)，3D 四模态 32×112×112，**train=120(60+60), test=40(20+20)**，2 类（每类 80 例，test_ratio 0.25） |
+| Shanghai | 已扩样完成 | `data/processed/Shanghai` | 同源 BraTS2023 抽取 t1c+t2f 模拟双模态 3D 客户端 16×112×112，**train=120(60+60), test=40(20+20)**，2 类；与 BraTS 取不相交 case |
 | Brisc2025 | 已完成正式公开源（128×128） | `data/processed/Brisc2025` | Zenodo DOI `10.5281/zenodo.17524350`，2D t1，train=5000, test=1000，四类完整 |
 | Yale | 未使用 | `data/processed/Yale` | 可作为外部验证客户端，当前无数据 |
 
@@ -110,6 +110,17 @@
 2. 改进 FedMFG：移除/修复有害的头部加权聚合与无效 teacher 分支，调权重，使其真正领先。
 3. 修复 fedgh/fedtgp（按客户端标签空间对齐全局头维度）与 fedproto 的 test 记录，补全 baseline 表。
 4. 扩样 + 改进后重跑多 seed，确认 FedMFG 占优后再定稿。
+
+## 迭代 1 进展（2026-06-23 上午）
+
+已完成：
+1. **3D 扩样**：BraTS/Shanghai 各 train=120/test=40、两类均衡（见上表）。重采样脚本 `data/scripts/preprocess_brats_3d_hf.py --brats_cases_per_class 80 --shanghai_cases_per_class 80 --test_ratio 0.25`。
+2. **FedMFG 改进**：发现头部聚合此前用 `rho`/`rho_eta`（完全不含样本量），导致小样本噪声客户端污染全局头、还输给 uniform。新增数据量感知模式 `count_rho_eta`（恢复 `mfg_head_gamma/eps` 的设计意图）并设为默认；新增 `count_blind_head` 消融变体量化该修复。
+3. **修复崩溃基线**：`fedgh/fedproto/fedtgp` 改用 `--model_mode auto`（单编码器，模态堆叠为输入通道 → 固定 512 维特征），解决 2048 vs 512 维度不匹配崩溃。smoke 验证 fedgh/fedmfg 均 exit 0、无维度报错。
+
+进行中：
+- **迭代 1 聚焦对比**（1 seed，10 轮，扩样数据）：fedmm/fedamm/fedmfg，输出 `paper_outputs/check_iter1/`。用于在投入多日全套件前，先确认 count-aware 修复能否让 FedMFG 反超 fedmm。
+- 若 FedMFG 领先 → 启动多 seed 全套件 + 消融；若仍落后 → 继续反思（teacher 分支、原型温度、门控）再迭代。
 
 ## 消融实验状态
 
