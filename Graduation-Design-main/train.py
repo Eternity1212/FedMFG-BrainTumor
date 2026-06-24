@@ -179,6 +179,8 @@ def build_arg_parser():
     parser.add_argument("--mfg_head_weight_mode", type=str, default="count_rho_eta",
                         choices=["uniform", "rho", "rho_eta", "count_rho_eta"],
                         help="[FedMFG] Unified classifier-head aggregation weight: 'uniform' (mean), 'rho' (prototype consistency only), 'rho_eta' (consistency + modality completeness), 'count_rho_eta' (data-size aware consistency + completeness, default)")
+    parser.add_argument("--mfg_head_personal_alpha", type=float, default=0.0,
+                        help="[FedMFG] Personalized-head blend: loaded head = (1-alpha)*global + alpha*local. 0.0 fully shares the global prototype-guided head (default); >0 keeps part of each client's local head to protect clients with heterogeneous label spaces (e.g. 2D clients).")
     parser.add_argument("--mfg_disable_teacher", action="store_true",
                         help="[FedMFG ablation] Disable teacher prototypes sent from the server")
     parser.add_argument("--mfg_disable_combo_prototype", action="store_true",

@@ -14,6 +14,7 @@ class ClientFedMFG(Client):
         super().__init__(args, client_name, **kwargs)
         self.mfg_proto_lambda = float(getattr(args, "mfg_proto_lambda"))
         self.mfg_head_lambda = float(getattr(args, "mfg_head_lambda"))
+        self.mfg_head_personal_alpha = float(getattr(args, "mfg_head_personal_alpha", 0.0))
         self.mfg_disable_combo_prototype = bool(getattr(args, "mfg_disable_combo_prototype", False))
         self.teacher_prototypes = {}
         self.local_combo_prototypes = {}
@@ -67,7 +68,23 @@ class ClientFedMFG(Client):
         return copy.deepcopy(self._model_module().classifier.state_dict())
 
     def load_classifier_state(self, classifier_state):
-        self._model_module().classifier.load_state_dict(classifier_state, strict=True)
+        # Personalized prototype-guided head: blend the incoming global head with
+        # the client's current local head. alpha=0 -> fully global (default);
+        # alpha>0 keeps part of the local head so clients with heterogeneous
+        # label spaces (e.g. single-modality 2D clients) are not flattened by a
+        # head dominated by other clients/classes.
+        alpha = self.mfg_head_personal_alpha
+        if alpha > 0.0:
+            local_state = self._model_module().classifier.state_dict()
+            blended = {}
+            for key, global_tensor in classifier_state.items():
+                global_tensor = global_tensor.to(
+                    device=local_state[key].device, dtype=local_state[key].dtype
+                )
+                blended[key] = (1.0 - alpha) * global_tensor + alpha * local_state[key]
+            self._model_module().classifier.load_state_dict(blended, strict=True)
+        else:
+            self._model_module().classifier.load_state_dict(classifier_state, strict=True)
 
     def set_parameters(self, payload):
         if payload is None:

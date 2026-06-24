@@ -49,21 +49,44 @@ def _last(seq):
 def load_run(path, clients):
     with open(path) as f:
         d = json.load(f)
-    out = {"sample_weighted_acc": _last(d.get("test_accuracy", [])),
-           "sample_weighted_f1": _last(d.get("test_macro_f1", []))}
-    per_acc, per_f1 = {}, {}
+    per_acc, per_f1, per_n = {}, {}, {}
     cl = d.get("clients", {})
     for c in clients:
-        if c in cl:
-            per_acc[c] = _last(cl[c].get("test_accuracy", []))
-            per_f1[c] = _last(cl[c].get("test_macro_f1", []))
-    out["per_client_acc"] = per_acc
-    out["per_client_f1"] = per_f1
+        if c not in cl:
+            continue
+        # Per-round test list takes priority; otherwise fall back to the
+        # single final-test scalar (used by e.g. the `local` algorithm).
+        per_acc[c] = _last(cl[c].get("test_accuracy", [])) \
+            if cl[c].get("test_accuracy") else cl[c].get("final_test_accuracy")
+        per_f1[c] = _last(cl[c].get("test_macro_f1", [])) \
+            if cl[c].get("test_macro_f1") else cl[c].get("final_test_macro_f1")
+        per_n[c] = cl[c].get("final_test_num_samples")
+    out = {"per_client_acc": per_acc, "per_client_f1": per_f1}
+
+    # Overall sample-weighted: prefer the server-logged top-level series;
+    # otherwise reconstruct from per-client final test (weighted by n).
+    sw_acc = _last(d.get("test_accuracy", []))
+    sw_f1 = _last(d.get("test_macro_f1", []))
+    if sw_acc is None:
+        sw_acc = _weighted(per_acc, per_n)
+        sw_f1 = _weighted(per_f1, per_n)
+    out["sample_weighted_acc"] = sw_acc
+    out["sample_weighted_f1"] = sw_f1
+
     accs = [v for v in per_acc.values() if v is not None]
     f1s = [v for v in per_f1.values() if v is not None]
     out["client_macro_acc"] = mean(accs) if accs else None
     out["client_macro_f1"] = mean(f1s) if f1s else None
     return out
+
+
+def _weighted(value_map, n_map):
+    pairs = [(value_map[c], n_map.get(c)) for c in value_map
+             if value_map.get(c) is not None and n_map.get(c)]
+    if not pairs:
+        return None
+    total = sum(n for _, n in pairs)
+    return sum(v * n for v, n in pairs) / total if total else None
 
 
 def _ms(values):
