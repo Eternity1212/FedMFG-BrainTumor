@@ -59,3 +59,4 @@ data/**/*.h5
 *.nii.gz
 *.npy
 *.npz
+*.tar.gz

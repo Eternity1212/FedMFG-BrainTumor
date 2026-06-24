@@ -17,6 +17,20 @@
 - 为在仅 CPU 的机器上可完成训练，3D 体数据用三线性插值重采样到 32×112×112（BraTS）/16×112×112（Shanghai），2D 图像重采样到 128×128。`dataset.py` 通过环境变量 `FDU_BRATS_SHAPE/FDU_SHANGHAI_SHAPE/FDU_FIGSHARE_SHAPE/FDU_BRISC2025_SHAPE` 控制分辨率，默认仍是全分辨率（供 GPU 全量复现）。
 - 该 4 客户端构成真实的异构联邦设定：2D/3D 混合、模态组合不同（t1c / t1 / t1c+t2f / 四模态全模态）、标签空间不同（各客户端 2~4 类，全局 4 类有效标签）。
 
+### 数据集来源与替代说明（公开/私有）
+
+| 客户端 | 真实来源 | 2D/3D | 模态 | 类别 | 性质 |
+|---|---|---|---|---|---|
+| Figshare | 公开（Cheng et al. 经典脑肿瘤集，HF 镜像） | 2D | T1c | glioma/meningioma/pituitary（3 类） | 真公开数据，直接用 |
+| Brisc2025 | 公开（Zenodo DOI 10.5281/zenodo.17524350，CC BY 4.0） | 2D | T1 | glioma/meningioma/pituitary/no_tumor（4 类） | 真公开数据，直接用 |
+| BraTS | 公开 BraTS2023（HF `Angelou0516/brats2023-gli/men`，CC BY 4.0） | 3D | T1/T1c/T2/FLAIR（全模态） | glioma/meningioma（2 类） | **替代品** |
+| Shanghai | 同源 BraTS2023，仅抽 T1c+FLAIR、取与 BraTS 不相交 case | 3D | T1c/FLAIR（缺模态） | glioma/meningioma（2 类） | **替代品（模拟缺模态）** |
+
+- **两个 3D 客户端（BraTS、Shanghai）是替代品**：原论文的 `Shanghai` 为上海某医院**私有数据**、无法获取；故两个 3D 客户端均基于公开 BraTS2023 重建——`BraTS` 用全 4 模态代表"全模态医院"，`Shanghai` 仅取 T1c+FLAIR 人为制造"模态缺失医院"。`Figshare`/`Brisc2025` 本就是公开数据集，非替代品。
+- **预处理**：3D NIfTI 用 `nibabel` 读取→三线性重采样→每模态存 `.npz`；2D JPG/PNG→缩放→`.npz`；每类均衡抽样。统一目录 `data/processed/<客户端>/<train|test>/<类别>/<样本>/<模态>.npz`。
+- **全局标签空间 5 类**：no_tumor/meningioma/glioma/pituitary/brain_metastases（`num_classes=5`）。
+- **论文须如实写明**：由于原私有多中心数据（尤其上海医院数据）不可获取，两个 3D 客户端基于公开 BraTS2023 重建，`Shanghai` 仅取 T1c+FLAIR 模拟模态缺失的异构联邦场景，并非原始私有数据。
+
 ## 已完成工程验证
 
 | 项目 | 状态 | 输出 |
