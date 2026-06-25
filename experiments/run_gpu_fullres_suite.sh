@@ -80,11 +80,12 @@ for seed in ${SEEDS}; do
       fedmm)    run_algo "${seed}" fedmm    --model_mode multimodal || echo "[WARN] fedmm s${seed} failed" >&2 ;;
       fedamm)   run_algo "${seed}" fedamm   --model_mode multimodal --amm_mb_lambda 1.0 --amm_mc_lambda 1.0 || echo "[WARN] fedamm s${seed} failed" >&2 ;;
       fedmfg)   run_algo "${seed}" fedmfg   --model_mode multimodal \
-                  --mfg_proto_lambda 0.1 --mfg_head_lambda 0.1 \
+                  --mfg_proto_lambda 0.05 --mfg_head_lambda 0.05 \
                   --mfg_proto_momentum 0.7 --mfg_proto_tau 1.0 \
-                  --mfg_teacher_lambda 0.7 --mfg_teacher_tau 1.0 \
+                  --mfg_teacher_lambda 0.3 --mfg_teacher_tau 1.0 \
                   --mfg_head_tau 1.0 --mfg_head_beta 1.0 --mfg_head_gamma 1.0 \
-                  --mfg_head_weight_mode count_rho_eta || echo "[WARN] fedmfg s${seed} failed" >&2 ;;
+                  --mfg_head_weight_mode count_rho_eta --mfg_head_personal_alpha 0.0 \
+                  || echo "[WARN] fedmfg s${seed} failed" >&2 ;;
       *) echo "Unknown algo ${algo}" >&2; exit 1 ;;
     esac
   done
