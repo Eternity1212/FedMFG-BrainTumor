@@ -33,7 +33,7 @@ PYTHON_BIN="${PYTHON:-python3}"
 DEVICE="${DEVICE:-cuda}"
 SEEDS="${SEEDS:-42 43 44}"
 ROUNDS="${ROUNDS:-16}"
-LR="${LR:-1e-3}"
+LR="${LR:-3e-4}"   # 关键：lowregmid 获胜配置在 CPU 上用的就是 3e-4；1e-3 会训练不稳定（loss 飙到 15+），导致 FedMFG 反而跑不出优势。
 CBS_MAP="${CBS_MAP:-BraTS=4 Shanghai=8 Figshare=64 Brisc2025=64}"
 ALGOS="${ALGOS:-fedmfg fedamm fedmm fedtgp fedproto fedgh local}"
 TEST_RATES="${TEST_RATES:-0.0 0.25 0.5 0.75}"

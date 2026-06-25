@@ -62,7 +62,7 @@ SEEDS="${SEEDS:-42 43 44}"
 ROUNDS="${ROUNDS:-16}"
 ABLATION_SEED="${ABLATION_SEED:-42}"
 ABLATION_ROUNDS="${ABLATION_ROUNDS:-16}"
-LR="${LR:-1e-3}"
+LR="${LR:-3e-4}"   # 关键：1e-3 会训练不稳定导致结果偏低；调参验证过 3e-4 才能跑出 FedMFG 的优势。
 CBS_MAP="${CBS_MAP:-BraTS=4 Shanghai=8 Figshare=64 Brisc2025=64}"
 
 # 数据分辨率与规模（全分辨率对标原文；显存/磁盘紧张可调小）
