@@ -146,32 +146,37 @@ Multi-center brain tumor diagnosis requires models that can learn from distribut
 
 ### 4.4 Main results
 
-当前来自历史 JSON 的可用表：
+**评估口径说明（重要）**：异构 FL 中各客户端样本量差异极大（2D 客户端样本约占 87%），单纯样本加权会被大客户端主导。因此主指标采用 **客户端宏平均 Macro-F1（Client-Macro F1）**，即先算每个客户端的 Macro-F1 再对客户端求平均，公平反映"对每个机构都好"。同时报告样本加权 Acc 作参考。
 
-| Algorithm | Accuracy (%) | Macro F1 (%) |
-| --- | ---: | ---: |
-| FD | 80.79 | 76.62 |
-| FedGH | 73.18 | 68.28 |
-| FedMM | 78.58 | 77.55 |
-| FedProto | 83.95 | 75.93 |
-| FedTGP | 87.63 | 87.01 |
-| Local | 84.25 | 84.05 |
-| FedAMM | pending test rerun | pending test rerun |
-| FedMFG | pending test rerun | pending test rerun |
+#### 4.4.1 CPU 低分辨率预实验（seed42，方向性证据，非最终数字）
 
-公开双客户端链路检查：
+> 用途：在 GPU 全分辨率多 seed 结果产出前，作为方法有效性的方向性证据。`±0` 因仅单 seed，不是真实方差。
 
-| Algorithm | Accuracy (%) | Macro F1 (%) | Setting |
-| --- | ---: | ---: | --- |
-| Local | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
-| FedGH | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
-| FedProto | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
-| FedTGP | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
-| FedMM | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
-| FedAMM | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
-| FedMFG | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=2, MAX_SAMPLES=80 |
+| Algorithm | SampleW Acc | Client-Macro Acc | **Client-Macro F1** | BraTS(3D难) | Shanghai | Figshare | Brisc |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **FedMFG (ours, lowregmid)** | **82.03** | **79.53** | **79.30** | **80.0** | 72.5 | 82.5 | 83.1 |
+| FedProto | 81.25 | 78.02 | 77.95 | 70.0 | 80.0 | 73.3 | 88.8 |
+| FedMFG (vanilla) | 74.06 | 74.27 | 73.76 | 72.5 | 77.5 | 70.8 | 76.2 |
+| FedTGP | 78.44 | 74.24 | 72.71 | 60.0 | 80.0 | 70.4 | 86.6 |
+| Local | 76.09 | 72.81 | 71.66 | 60.0 | 77.5 | 75.0 | 78.8 |
+| FedAMM | 77.81 | 72.29 | 69.87 | 60.0 | 70.0 | 79.2 | 80.0 |
+| FedMM | 78.12 | 71.93 | 69.49 | 50.0 | 77.5 | 79.6 | 80.6 |
 
-该表只证明所有方法可以在正式 BRISC2025 数据上完整训练和测试。由于样本量和轮数过小，且任务难度不足，不能作为论文正式主表。
+要点：调参后的 FedMFG (lowregmid: proto/head/teacher λ=0.05/0.05/0.3, lr=3e-4) 在三个聚合口径同时排名第一，并在最难的 3D 客户端 BraTS 上大幅领先（80.0 vs 次优 72.5）。
+
+#### 4.4.2 GPU 全分辨率多 seed 主表（论文正式数字，待填）
+
+> 由 `experiments/run_gpu_paper.sh`（lr=3e-4 + lowregmid + seed 42/43/44 全分辨率）产出，用 `paper_tools/report_final.py` 汇总 mean±std。
+
+| Algorithm | SampleW Acc | Client-Macro Acc | **Client-Macro F1** | BraTS | Shanghai | Figshare | Brisc |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Local | pending | pending | pending | | | | |
+| FedGH | pending | pending | pending | | | | |
+| FedProto | pending | pending | pending | | | | |
+| FedTGP | pending | pending | pending | | | | |
+| FedMM | pending | pending | pending | | | | |
+| FedAMM | pending | pending | pending | | | | |
+| **FedMFG (ours)** | pending | pending | pending | | | | |
 
 ### 4.5 Ablation study
 
@@ -185,19 +190,17 @@ Multi-center brain tumor diagnosis requires models that can learn from distribut
 - w/o head calibration loss
 - uniform head aggregation
 
-公开双客户端消融链路检查：
+消融基线为 lowregmid 完整 FedMFG，逐项关闭组件（GPU 脚本 STAGE 4 自动跑：`--mfg_disable_teacher` / `--mfg_disable_combo_prototype` / `--mfg_disable_modality_gate` / `--mfg_head_weight_mode uniform`）。
 
-| Variant | Accuracy (%) | Macro F1 (%) | Setting |
+| Variant | Client-Macro F1 | Δ vs Full | 结论 |
 | --- | ---: | ---: | --- |
-| Full FedMFG | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
-| w/o modality gate | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
-| w/o combo prototype | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
-| w/o teacher prototype | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
-| w/o prototype alignment loss | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
-| w/o head calibration loss | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
-| uniform head aggregation | 100.00 | 100.00 | Figshare + BRISC2025, ROUNDS=1, MAX_SAMPLES=16 |
+| **Full FedMFG (lowregmid)** | pending (GPU) | — | 完整方法 |
+| w/o teacher prototype | CPU 预实验早停，末轮测试 Acc≈0.70（完整≈0.82），明显下降 | ↓ | 教师原型有贡献 |
+| w/o combo prototype | pending | | |
+| w/o modality gate | pending | | |
+| uniform head aggregation | pending | | |
 
-该表只证明消融代码开关均能运行。正式消融需要更大样本量、更多轮数和多随机种子。
+> CPU 预实验已观察到去掉教师原型后性能下降，初步支持该组件的有效性；正式消融数字以 GPU 全分辨率为准。个性化头方向（`--mfg_head_personal_alpha`>0）经 a03/a07 扫描证伪（性能下降），故最终方法采用 alpha=0 共享全局原型指导头。
 
 ### 4.6 Missing-modality robustness
 
