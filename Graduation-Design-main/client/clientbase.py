@@ -293,11 +293,20 @@ class Client:
             "--client_train_max_samples_map",
         )
         train_max_samples = train_max_samples_map.get(self.client_name)
+        # Simulated missing-modality rates. train rate covers the training-phase
+        # distribution (train + the val used for model selection); test rate is
+        # the deployment-time missingness. Default 0 -> original behaviour.
+        missing_rate_train = float(getattr(args, "missing_modality_rate_train", 0.0))
+        missing_rate_test = float(getattr(args, "missing_modality_rate_test", 0.0))
+        missing_seed = getattr(args, "missing_modality_seed", -1)
+        missing_seed = self.seed if missing_seed is None or int(missing_seed) < 0 else int(missing_seed)
         full_train_dataset = BrainTumorCaseDataset(
             split="train",
             client_name=self.client_name,
             root_dir=self.root_dir,
             max_samples=max_samples,
+            missing_rate=missing_rate_train,
+            missing_seed=missing_seed,
         )
         self.train_dataset, self.val_dataset = self._split_train_val_dataset(full_train_dataset)
         self.train_dataset = _limit_subset_length(self.train_dataset, train_max_samples)
@@ -306,6 +315,8 @@ class Client:
             client_name=self.client_name,
             root_dir=self.root_dir,
             max_samples=max_samples,
+            missing_rate=missing_rate_test,
+            missing_seed=missing_seed,
         )
 
         self.datasets = {

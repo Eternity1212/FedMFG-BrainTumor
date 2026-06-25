@@ -1,3 +1,4 @@
+import hashlib
 import os
 
 import numpy as np
@@ -14,6 +15,40 @@ GLOBAL_LABEL_MAP = {
 }
 
 GLOBAL_MODALITIES = ["t1", "t1c", "t2w", "t2f"]
+
+
+def _deterministic_unit(*parts):
+    """Map an arbitrary key to a stable float in [0, 1).
+
+    Used to decide modality dropping reproducibly: the same (seed, split,
+    sample, modality) always yields the same value, so every algorithm and
+    every rerun sees an identical missing-modality pattern -> fair comparison.
+    """
+    raw = "|".join(str(p) for p in parts).encode("utf-8")
+    digest = hashlib.md5(raw).hexdigest()
+    return int(digest[:8], 16) / float(0xFFFFFFFF)
+
+
+def select_present_modalities(loaded_modalities, *, rate, seed, split, sample_id):
+    """Return the subset of modalities to keep after simulated missingness.
+
+    Drops each available modality independently with probability ``rate`` using
+    a deterministic hash, while guaranteeing at least one modality survives
+    (a sample with zero modalities is meaningless). Single-modality clients are
+    therefore never affected. ``rate <= 0`` is a no-op (full backward compat).
+    """
+    modalities = list(loaded_modalities)
+    if rate <= 0.0 or len(modalities) <= 1:
+        return modalities
+    scored = [
+        (modality, _deterministic_unit(seed, split, sample_id, modality))
+        for modality in modalities
+    ]
+    kept = [modality for modality, score in scored if score >= rate]
+    if not kept:
+        # Guarantee >=1 modality: keep the one least likely to be dropped.
+        kept = [max(scored, key=lambda item: item[1])[0]]
+    return kept
 
 
 def _shape_from_env(env_name, default_shape):
@@ -126,6 +161,8 @@ class BrainTumorCaseDataset(Dataset):
         client_name,
         root_dir=None,
         max_samples=None,
+        missing_rate=0.0,
+        missing_seed=0,
     ):
         self.split = split
         self.client_name = client_name
@@ -135,6 +172,11 @@ class BrainTumorCaseDataset(Dataset):
         self.expected_modalities = list(self.client_spec["modalities"])
         self.spatial_shape = tuple(self.client_spec["shape"])
         self.is_3d = bool(self.client_spec["is_3d"])
+        # Simulated missing-modality rate (0 = disabled). Applied per sample with
+        # a deterministic hash so the missing pattern is identical across
+        # algorithms and reruns at the same seed.
+        self.missing_rate = float(missing_rate)
+        self.missing_seed = int(missing_seed)
         self.samples = self._build_samples()
         if max_samples is not None and max_samples < len(self.samples):
             self.samples = self.samples[:max_samples]
@@ -185,9 +227,18 @@ class BrainTumorCaseDataset(Dataset):
 
     def __getitem__(self, index):
         sample = self.samples[index]
+        present_modalities = list(sample["modality_paths"].keys())
+        if self.missing_rate > 0.0:
+            present_modalities = select_present_modalities(
+                present_modalities,
+                rate=self.missing_rate,
+                seed=self.missing_seed,
+                split=self.split,
+                sample_id=sample["sample_id"],
+            )
         loaded_modalities = {
-            modality: self._load_modality_tensor(modality_path)
-            for modality, modality_path in sample["modality_paths"].items()
+            modality: self._load_modality_tensor(sample["modality_paths"][modality])
+            for modality in present_modalities
         }
 
         x = {

@@ -138,6 +138,13 @@ def build_arg_parser():
     parser.add_argument("--prototype_dim", type=int,   default=256)
     parser.add_argument("--dropout",       type=float, default=0.0)
 
+    parser.add_argument("--missing_modality_rate_train", type=float, default=0.0,
+                        help="Simulated missing-modality rate during training (0=disabled). Each multimodal sample drops every available modality independently with this probability (>=1 modality always kept). Single-modality clients are unaffected. Applies to train+val.")
+    parser.add_argument("--missing_modality_rate_test", type=float, default=0.0,
+                        help="Simulated missing-modality rate at test/deployment time (0=disabled). Use this to plot robustness curves vs missingness severity.")
+    parser.add_argument("--missing_modality_seed", type=int, default=-1,
+                        help="Seed for the deterministic missing-modality pattern. -1 (default) uses --seed. Fix it to a constant to keep an identical missing test set across seeds.")
+
     parser.add_argument("--server_learning_rate", type=float, default=1e-3,
                         help="[FedGH / FedTGP] Server-side learning rate")
     parser.add_argument("--server_epochs",        type=int,   default=5,
