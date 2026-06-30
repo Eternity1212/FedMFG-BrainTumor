@@ -120,6 +120,12 @@ def build_arg_parser():
     parser.add_argument("--val_ratio",           type=float, default=0.1)
     parser.add_argument("--amp",                 action=argparse.BooleanOptionalAction, default=True,
                         help="Enable CUDA mixed precision for training and evaluation")
+    parser.add_argument("--eval_test_on_best",   action=argparse.BooleanOptionalAction, default=True,
+                        help="Crash-resistant final test: whenever a round reaches a new best validation "
+                             "accuracy, immediately evaluate and persist a test result to history.json. "
+                             "Guarantees a usable final test from the best round even if a later round "
+                             "crashes (e.g. shared-GPU OOM) before the normal end-of-training test. "
+                             "Use --no-eval_test_on_best to disable.")
     parser.add_argument("--num_workers",         type=int,   default=4,
                         help="Number of DataLoader workers per client")
     parser.add_argument("--pin_memory",          action=argparse.BooleanOptionalAction, default=True,

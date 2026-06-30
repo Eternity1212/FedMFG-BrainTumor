@@ -36,6 +36,11 @@ class Server:
         self.server_early_stopping_patience = getattr(args, "server_early_stopping_patience", 0)
         self.server_early_stopping_min_delta = getattr(args, "server_early_stopping_min_delta", 0.0)
         self.server_early_stopping_enabled = self.server_early_stopping_patience > 0
+        # Crash-resistant test: whenever a round reaches a new best validation,
+        # immediately evaluate + persist a test result. A later OOM/crash then
+        # still leaves a usable final test from the best round (see
+        # maybe_evaluate_validation). Enabled by default; --no-eval_test_on_best disables.
+        self.eval_test_on_best = getattr(args, "eval_test_on_best", True)
         self.best_val_accuracy = None
         self.best_round = None
         self.no_improvement_rounds = 0
@@ -441,7 +446,36 @@ class Server:
         val_summary["round"] = round_idx
         self._record_evaluation(round_idx, val_summary, elapsed_time)
         self._print_round_summary(val_summary)
+        prev_best_round = self.best_round
         self._update_server_early_stopping(round_idx, val_summary)
+
+        # Crash-resistant final test: if this round set a new best-val state, the
+        # current model IS the best model right now, so evaluate the test split
+        # immediately and persist it. This guarantees that even if a later round
+        # crashes (e.g. shared-GPU OOM) before the normal end-of-training final
+        # test, history.json already carries a valid test result from the best
+        # round. Failures here never abort training.
+        new_best_this_round = (
+            self.best_round == round_idx and self.best_round != prev_best_round
+        )
+        if self.eval_test_on_best and new_best_this_round:
+            try:
+                test_summary = self.evaluate(split="test", round_idx=round_idx)
+                test_summary["round"] = round_idx
+                self._print_round_summary(test_summary)
+                logger.info(
+                    "[crash-safe] Persisted test result at new best round %d (test acc=%.4f, macro-f1=%.4f).",
+                    round_idx,
+                    test_summary["accuracy"],
+                    test_summary["macro_f1"],
+                )
+            except Exception as exc:  # noqa: BLE001 - never let eval kill training
+                logger.warning(
+                    "[crash-safe] test-on-best evaluation failed at round %d: %s",
+                    round_idx,
+                    exc,
+                )
+
         self.flush_artifacts(force=True)
         return val_summary
 

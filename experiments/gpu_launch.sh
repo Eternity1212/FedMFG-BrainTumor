@@ -24,6 +24,9 @@ if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]] && command -v nvidia-smi >/dev/null 2>&1
     export CUDA_VISIBLE_DEVICES="${GPU}"
   fi
 fi
+# 减少共享 GPU 上的显存碎片化 OOM（PyTorch 可扩展段分配器）。
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+echo "[gpu_launch] PYTORCH_CUDA_ALLOC_CONF=${PYTORCH_CUDA_ALLOC_CONF}"
 echo "[gpu_launch] CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-<unset>}"
 if command -v nvidia-smi >/dev/null 2>&1; then
   echo "[gpu_launch] 当前各卡显存："
